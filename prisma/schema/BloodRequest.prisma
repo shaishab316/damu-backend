@@ -1,0 +1,145 @@
+// ============================================================================
+// BloodRequest Models - Blood Request & Donor Response Management
+// ============================================================================
+// Models for requesting blood, tracking responses from donors, and
+// matching blood requests with available donations.
+// ============================================================================
+
+model BloodRequest {
+  /// Unique identifier for blood request (UUID)
+  id String @id @default(uuid())
+
+  // --- Request Creator ---
+  /// Reference to User who created the blood request (typically patient/hospital staff)
+  requesterId Int
+  requester   User @relation("UserBloodRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  // --- Blood Requirements ---
+  /// Reference to encrypted blood group needed (O+, O-, B+, B-, A+, A-, AB+, AB-)
+  bloodGroupId String
+  bloodGroup   Vault  @relation("RequestBloodGroup", fields: [bloodGroupId], references: [id])
+
+  /// Number of blood units needed
+  unitsNeeded Int @default(1)
+
+  // --- Request Context ---
+  /// Urgency level of the request (CRITICAL, URGENT, NORMAL)
+  urgency RequestUrgency @default(NORMAL)
+  /// Current status of the request (OPEN, FULFILLED, CANCELLED, EXPIRED)
+  status  RequestStatus  @default(OPEN)
+
+  // --- Location ---
+  /// Reference to location where blood is needed
+  locationId String?
+  location   Location? @relation("RequestLocation", fields: [locationId], references: [id], onDelete: SetNull)
+
+  // --- Additional Details ---
+  /// Reference to encrypted clinical notes or special requirements
+  noteId String?
+  note   Vault?  @relation("RequestNote", fields: [noteId], references: [id], onDelete: SetNull)
+
+  /// Reference to organization managing this request (optional, typically hospital)
+  organizationId String?
+  organization   Organization? @relation("OrganizationRequest", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  // --- Request Lifecycle ---
+  /// When the request expires (blood no longer needed after this date)
+  expiresAt   DateTime?
+  /// When the request was fully fulfilled (all units obtained)
+  fulfilledAt DateTime?
+
+  // --- System Metadata ---
+  /// When request was created
+  createdAt DateTime @default(now())
+  /// Last modification timestamp
+  updatedAt DateTime @updatedAt
+
+  // --- Related Records ---
+  /// Donor responses to this request
+  responses BloodRequestResponse[] @relation("BloodRequestResponses")
+  /// Social media posts about this request
+  posts     Post[]                 @relation("PostBloodRequest")
+  /// Donations that fulfilled this request
+  donations Donation[]             @relation("RequestDonations")
+
+  // --- Database Indexes ---
+  /// Index for status queries (open requests first)
+  @@index([status, createdAt])
+}
+
+// ============================================================================
+// BloodRequestResponse Model - Donor Responses to Blood Requests
+// ============================================================================
+/// Tracks donor responses to blood requests (acceptance/decline for donations)
+model BloodRequestResponse {
+  /// Unique identifier for response record (UUID)
+  id String @id @default(uuid())
+
+  // --- Request & Donor Reference ---
+  /// Reference to the blood request being responded to
+  requestId String
+  /// Reference to the donor responding
+  donorId   Int
+
+  /// Relation to blood request
+  request BloodRequest @relation("BloodRequestResponses", fields: [requestId], references: [id], onDelete: Cascade)
+  /// Relation to donor user
+  donor   User         @relation("UserDonorResponses", fields: [donorId], references: [id], onDelete: Cascade)
+
+  // --- Response Status ---
+  /// Status of donor's response (PENDING, ACCEPTED, DECLINED, COMPLETED)
+  status ResponseStatus @default(PENDING)
+
+  // --- Timeline ---
+  /// When donor responded to the request
+  respondedAt DateTime @default(now())
+  /// Last modification of response status
+  updatedAt   DateTime @updatedAt
+
+  // --- Database Constraints ---
+  /// Unique constraint prevents duplicate responses from same donor to same request
+  @@unique([requestId, donorId])
+}
+
+// ============================================================================
+// RequestUrgency Enum - Blood Request Urgency Levels
+// ============================================================================
+/// Indicates how urgently blood is needed
+/// CRITICAL: Life-threatening emergency, needed immediately
+/// URGENT: High priority, needed within hours
+/// NORMAL: Regular request, standard processing
+enum RequestUrgency {
+  CRITICAL
+  URGENT
+  NORMAL
+}
+
+// ============================================================================
+// RequestStatus Enum - Blood Request Lifecycle Status
+// ============================================================================
+/// Status of a blood request throughout its lifecycle
+/// OPEN: Request published, accepting donor responses
+/// FULFILLED: All needed blood units obtained/donated
+/// CANCELLED: Request cancelled by requester
+/// EXPIRED: Request deadline passed
+enum RequestStatus {
+  OPEN
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+// ============================================================================
+// ResponseStatus Enum - Donor Response to Request
+// ============================================================================
+/// Status of a donor's response to a blood request
+/// PENDING: Donor has not yet accepted/declined the request
+/// ACCEPTED: Donor agreed to donate for this request
+/// DECLINED: Donor declined to participate
+/// COMPLETED: Donor's donation for this request was processed
+enum ResponseStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COMPLETED
+}

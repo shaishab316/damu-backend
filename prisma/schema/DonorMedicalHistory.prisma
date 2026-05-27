@@ -1,0 +1,77 @@
+// ============================================================================
+// DonorMedicalHistory Model - Donor Health & Eligibility
+// ============================================================================
+// Comprehensive medical history for blood donors including chronic conditions,
+// medications, allergies, and deferral status. Used to determine donation
+// eligibility. All sensitive medical data is encrypted via Vault.
+// ============================================================================
+
+model DonorMedicalHistory {
+  /// Unique identifier for medical history record (UUID)
+  id String @id @default(uuid())
+
+  // --- Donor Reference ---
+  /// Reference to donor (one-to-one relationship)
+  donorId Int  @unique
+  donor   User @relation("UserMedicalHistory", fields: [donorId], references: [id], onDelete: Cascade)
+
+  // --- Medical Conditions (All Encrypted) ---
+  /// Reference to encrypted chronic medical conditions
+  /// (e.g., hypertension, diabetes, heart disease, cancer, etc.)
+  chronicConditionsId String?
+  chronicConditions   Vault?  @relation("MedicalHistoryConditions", fields: [chronicConditionsId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted list of current medications donor is taking
+  currentMedicationsId String?
+  currentMedications   Vault?  @relation("MedicalHistoryMedications", fields: [currentMedicationsId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted known allergies and adverse reactions
+  allergiesId String?
+  allergies   Vault?  @relation("MedicalHistoryAllergies", fields: [allergiesId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted blood disorders or hematologic conditions
+  /// (e.g., sickle cell disease, hemophilia, thalassemia, etc.)
+  bloodDisordersId String?
+  bloodDisorders   Vault?  @relation("MedicalHistoryBloodDisorders", fields: [bloodDisordersId], references: [id], onDelete: SetNull)
+
+  // --- Donation History ---
+  /// Last date donor successfully donated blood
+  lastDonatedAt  DateTime?
+  /// When donor becomes eligible to donate again (recovery period)
+  nextEligibleAt DateTime?
+
+  // --- Temporary Deferral ---
+  /// Whether donor is temporarily ineligible (low iron, low BP, etc.)
+  isDeferredTemporarily Boolean   @default(false)
+  /// Date when temporary deferral expires and donor becomes eligible again
+  deferralUntil         DateTime?
+
+  // --- Permanent Deferral ---
+  /// Whether donor is permanently ineligible for blood donation
+  isPermanentlyDeferred Boolean @default(false)
+
+  /// Reference to encrypted reason for permanent deferral
+  deferralReasonId String?
+  deferralReason   Vault?  @relation("MedicalHistoryDeferralReason", fields: [deferralReasonId], references: [id], onDelete: SetNull)
+
+  // --- Health Screening ---
+  /// Date of most recent health screening/physical examination
+  lastScreeningAt DateTime?
+  /// Reference to encrypted screening notes from doctor
+  screeningNoteId String?
+  screeningNote   Vault?    @relation("MedicalHistoryScreeningNote", fields: [screeningNoteId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted name of examining doctor
+  doctorNameId String?
+  doctorName   Vault?  @relation("MedicalHistoryDoctorName", fields: [doctorNameId], references: [id], onDelete: SetNull)
+
+  // --- System Metadata ---
+  /// When medical history record was created
+  createdAt DateTime @default(now())
+  /// Last modification timestamp (when medical information was updated)
+  updatedAt DateTime @updatedAt
+
+  // --- Database Indexes ---
+  /// Index for deferral status queries (finding eligible donors)
+  @@index([isDeferredTemporarily, isPermanentlyDeferred])
+}

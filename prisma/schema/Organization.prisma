@@ -1,0 +1,86 @@
+// ============================================================================
+// Organization Model - Blood Banks, Hospitals, Clinics
+// ============================================================================
+// Represents organizations that manage blood inventory, collect donations,
+// fulfill blood requests, and organize donation appointments.
+// Examples: Blood banks, hospitals, clinics, NGOs.
+// ============================================================================
+
+model Organization {
+  /// Unique identifier for organization (UUID)
+  id String @id @default(uuid())
+
+  // --- Basic Information ---
+  /// Reference to encrypted organization name
+  nameId String
+  name   Vault  @relation("OrganizationName", fields: [nameId], references: [id], onDelete: Cascade)
+
+  /// Type of organization (HOSPITAL, BLOOD_BANK, CLINIC, NGO)
+  type OrganizationType
+
+  // --- Contact Information ---
+  /// Reference to encrypted contact phone number
+  contactPhoneId String?
+  contactPhone   Vault?  @relation("OrganizationPhone", fields: [contactPhoneId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted contact email address
+  contactEmailId String?
+  contactEmail   Vault?  @relation("OrganizationEmail", fields: [contactEmailId], references: [id], onDelete: SetNull)
+
+  // --- Licensing & Verification ---
+  /// Reference to encrypted license number (regulatory compliance)
+  licenseNumberId String?
+  licenseNumber   Vault?  @relation("OrganizationLicense", fields: [licenseNumberId], references: [id], onDelete: SetNull)
+
+  /// Unique registration/government identifier
+  registrationNumber String?   @unique
+  /// Whether organization has been verified by system admin
+  isVerified         Boolean   @default(false)
+  /// Date when organization was verified
+  verificationDate   DateTime?
+
+  // --- Location ---
+  /// Geographic location of organization headquarters
+  locationId String?   @unique
+  location   Location? @relation("OrganizationLocation", fields: [locationId], references: [id], onDelete: SetNull)
+
+  // --- Administration ---
+  /// Reference to User who administers/manages this organization
+  adminId Int
+  admin   User @relation("OrganizationAdmin", fields: [adminId], references: [id], onDelete: Restrict)
+
+  // --- System Metadata ---
+  /// When organization record was created
+  createdAt DateTime @default(now())
+  /// Last modification timestamp
+  updatedAt DateTime @updatedAt
+
+  // --- Related Entities ---
+  /// Blood inventory maintained by this organization
+  bloodInventories     BloodInventory[]      @relation("OrganizationInventory")
+  /// Donation appointments scheduled with this organization
+  donationAppointments DonationAppointment[] @relation("OrganizationAppointment")
+  /// Blood requests created/managed by this organization
+  bloodRequests        BloodRequest[]        @relation("OrganizationRequest")
+  /// Donations collected by this organization
+  donations            Donation[]            @relation("DonationOrganization")
+
+  // --- Database Indexes ---
+  /// Composite index for filtering by type and verification status
+  @@index([type, isVerified])
+}
+
+// ============================================================================
+// OrganizationType Enum - Organization Categories
+// ============================================================================
+/// Different types of organizations that can join the blood bank network
+/// HOSPITAL: Medical facility with transfusion services
+/// BLOOD_BANK: Dedicated blood collection and distribution center
+/// CLINIC: Small medical facility
+/// NGO: Non-governmental organization facilitating blood donations
+enum OrganizationType {
+  HOSPITAL
+  BLOOD_BANK
+  CLINIC
+  NGO
+}

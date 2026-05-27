@@ -1,0 +1,84 @@
+// ============================================================================
+// Auth Model - Authentication & Security
+// ============================================================================
+// Stores authentication credentials, security settings, and verification
+// status for user accounts. One-to-one relationship with User model.
+// Sensitive authentication data is stored encrypted.
+// ============================================================================
+
+model Auth {
+  /// Unique identifier for auth record (UUID)
+  id String @id @default(uuid())
+
+  // --- Password Management ---
+  /// Bcrypt/Argon2/Scrypt/PBKDF2 hashed password
+  passwordHash       String?
+  /// Algorithm used for password hashing (BCRYPT, ARGON2, SCRYPT, PBKDF2)
+  passwordHashMethod PasswordHashMethod? @default(BCRYPT)
+
+  /// One-time password hash for password reset flows
+  otpHash String?
+  /// Expiration time for OTP (one-time password)
+  otpExp  DateTime?
+
+  /// Whether user can request a password reset
+  canResetPassword Boolean? @default(false)
+
+  // --- Login Tracking ---
+  /// Number of failed login attempts (resets after successful login)
+  loginAttempts Int       @default(0)
+  /// Timestamp of most recent successful login
+  lastLogin     DateTime?
+
+  // --- Token Management ---
+  /// Hashed JWT refresh token for session persistence
+  refreshTokenHash String?
+
+  // --- Two-Factor Authentication (2FA) ---
+  /// Whether 2FA is enabled for this account
+  twoFactorEnabled  Boolean? @default(false)
+  /// Reference to encrypted 2FA secret (TOTP/authenticator app)
+  twoFactorSecretId String?
+  twoFactorSecret   Vault?   @relation("AuthTwoFactorSecret", fields: [twoFactorSecretId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted device information for trusted devices
+  deviceInfoId String?
+  deviceInfo   Vault?  @relation("AuthDeviceInfo", fields: [deviceInfoId], references: [id], onDelete: SetNull)
+
+  // --- Verification Status ---
+  /// Whether user's email address has been verified
+  isEmailVerified Boolean? @default(false)
+  /// Whether user's phone number has been verified (SMS/call)
+  isPhoneVerified Boolean? @default(false)
+
+  /// Whether account is active (can login)
+  isActive Boolean @default(true)
+
+  // --- Account Lock ---
+  /// When account is locked until (for failed login protection)
+  unlockAt DateTime?
+
+  // --- User Relationship ---
+  /// Reference to User account (one-to-one)
+  userId Int  @unique
+  user   User @relation("AuthUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  // --- Database Indexes ---
+  /// Index for efficient token lookup
+  @@index([refreshTokenHash])
+}
+
+// ============================================================================
+// PasswordHashMethod Enum - Supported Password Hashing Algorithms
+// ============================================================================
+/// Different algorithms supported for password hashing
+/// BCRYPT: Slow and industry-standard (recommended)
+/// ARGON2: Memory-hard algorithm, excellent security
+/// SCRYPT: Key derivation function with configurable difficulty
+/// PBKDF2: NIST-approved standard algorithm
+enum PasswordHashMethod {
+  BCRYPT
+  ARGON2
+  SCRYPT
+  PBKDF2
+}

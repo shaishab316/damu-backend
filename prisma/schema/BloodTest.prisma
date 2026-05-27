@@ -1,0 +1,75 @@
+// ============================================================================
+// BloodTest Model - Blood Donor & Unit Testing Results
+// ============================================================================
+// Records all blood test results performed on a donation, including
+// infectious disease screening and blood typing. Test results are
+// stored encrypted in the Vault for medical privacy and security.
+// ============================================================================
+
+model BloodTest {
+  /// Unique identifier for blood test record (UUID)
+  id String @id @default(uuid())
+
+  // --- Donation Reference ---
+  /// Reference to the donation being tested (one-to-one)
+  donationId String   @unique
+  donation   Donation @relation("BloodTest", fields: [donationId], references: [id], onDelete: Cascade)
+
+  // --- Infectious Disease Test Results (All Encrypted) ---
+  /// Reference to encrypted HIV test result
+  hivResultId String?
+  hivResult   Vault?  @relation("BloodTestHIV", fields: [hivResultId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted Hepatitis B test result
+  hepatitisBResultId String?
+  hepatitisBResult   Vault?  @relation("BloodTestHepatitisB", fields: [hepatitisBResultId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted Hepatitis C test result
+  hepatitisCResultId String?
+  hepatitisCResult   Vault?  @relation("BloodTestHepatitisC", fields: [hepatitisCResultId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted Syphilis test result
+  syphilisResultId String?
+  syphilisResult   Vault?  @relation("BloodTestSyphilis", fields: [syphilisResultId], references: [id], onDelete: SetNull)
+
+  // --- Blood Typing ---
+  /// Reference to encrypted blood typing result (ABO/Rh system verification)
+  bloodTypingResultId String?
+  bloodTypingResult   Vault?  @relation("BloodTestBloodTyping", fields: [bloodTypingResultId], references: [id], onDelete: SetNull)
+
+  // --- Additional Tests ---
+  /// Reference to encrypted results of other tests (CBC, coagulation studies, etc.)
+  otherTestsId String?
+  otherTests   Vault?  @relation("BloodTestOther", fields: [otherTestsId], references: [id], onDelete: SetNull)
+
+  // --- Test Timeline ---
+  /// Date and time tests were performed on the blood sample
+  testDate   DateTime  @default(now())
+  /// Date and time test results were approved by lab supervisor/pathologist
+  approvedAt DateTime?
+
+  // --- Testing Personnel ---
+  /// Reference to encrypted name of lab technician who performed tests
+  labTechnicianNameId String?
+  labTechnicianName   Vault?  @relation("BloodTestLabTechnician", fields: [labTechnicianNameId], references: [id], onDelete: SetNull)
+
+  // --- Approval & Quality ---
+  /// Reference to encrypted approval status (APPROVED, REJECTED, QUARANTINED, etc.)
+  approvalStatusId String?
+  approvalStatus   Vault?  @relation("BloodTestApprovalStatus", fields: [approvalStatusId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted remarks/notes from lab
+  /// (e.g., "Sample hemolyzed but testable", "Unable to type", etc.)
+  remarksId String?
+  remarks   Vault?  @relation("BloodTestRemarks", fields: [remarksId], references: [id], onDelete: SetNull)
+
+  // --- System Metadata ---
+  /// When test record was created in the system
+  createdAt DateTime @default(now())
+  /// Last modification timestamp
+  updatedAt DateTime @updatedAt
+
+  // --- Database Indexes ---
+  /// Index for searching test results by date
+  @@index([testDate])
+}

@@ -1,0 +1,101 @@
+// ============================================================================
+// Media Model - File Storage & Media Management
+// ============================================================================
+// Represents media files (images, videos, documents, audio) uploaded by
+// users. Tracks storage location (Cloudinary, AWS S3, GCS, etc.), file
+// metadata, and dimensions. Can be associated with users, posts, messages,
+// or conversations.
+// ============================================================================
+
+model Media {
+  /// Unique identifier for media file (UUID)
+  id String @id @default(uuid())
+
+  // --- Media Ownership ---
+  /// Reference to user who uploaded the media (optional, can be null for org uploads)
+  userId Int?
+  user   User? @relation("UserMedia", fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Reference to post this media is attached to
+  postId String?
+  post   Post?   @relation("PostMedia", fields: [postId], references: [id], onDelete: SetNull)
+
+  /// Reference to message this media is attached to
+  messageId String?
+  message   Message? @relation("MessageMedia", fields: [messageId], references: [id], onDelete: SetNull)
+
+  /// Reference to conversation logo/thumbnail
+  conversationId String?       @unique
+  conversation   Conversation? @relation("ConversationLogo", fields: [conversationId], references: [id], onDelete: SetNull)
+
+  // --- File Information ---
+  /// Public URL or file path to access the media
+  url      String
+  /// Type of media (IMAGE, VIDEO, AUDIO, DOCUMENT)
+  type     MediaType
+  /// MIME type of file (e.g., "image/jpeg", "video/mp4", "application/pdf")
+  mimeType String?
+
+  /// URL to a preview/thumbnail of the media (especially for videos)
+  previewUrl String?
+  /// File size in bytes
+  bytes      BigInt?
+
+  /// Image/video width in pixels (null for audio/documents)
+  width  Int?
+  /// Image/video height in pixels (null for audio/documents)
+  height Int?
+
+  // --- Storage Provider ---
+  /// Where the media is stored (CLOUDINARY, AWS_S3, GCS, LOCAL, EXTERNAL)
+  provider         StorageProvider @default(EXTERNAL)
+  /// Public ID from storage provider (used to reference file in provider)
+  providerPublicId String?
+
+  /// JSON metadata for the file (format, duration, quality settings, etc.)
+  metadata Json @default("{}")
+
+  // --- System Metadata ---
+  /// When file was uploaded
+  createdAt DateTime @default(now())
+  /// Last modification timestamp
+  updatedAt DateTime @updatedAt
+
+  // --- Database Indexes ---
+  /// Index for user media queries
+  @@index([userId])
+  /// Index for filtering by media type and retrieval by date
+  @@index([type, createdAt])
+}
+
+// ============================================================================
+// MediaType Enum - Types of Media Files
+// ============================================================================
+/// Categories of media that can be uploaded
+/// IMAGE: Still images (PNG, JPG, GIF, WebP, etc.)
+/// VIDEO: Video files (MP4, WebM, MKV, etc.)
+/// AUDIO: Audio files (MP3, WAV, AAC, etc.)
+/// DOCUMENT: Documents (PDF, DOCX, TXT, etc.)
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+// ============================================================================
+// StorageProvider Enum - Supported Cloud Storage Providers
+// ============================================================================
+/// Different cloud storage services supported by the system
+/// CLOUDINARY: Image/video hosting with CDN and transformations
+/// AWS_S3: Amazon Simple Storage Service
+/// GCS: Google Cloud Storage
+/// LOCAL: Local file system storage
+/// EXTERNAL: External/third-party storage (via URL)
+enum StorageProvider {
+  CLOUDINARY
+  AWS_S3
+  GCS
+  LOCAL
+  EXTERNAL
+}

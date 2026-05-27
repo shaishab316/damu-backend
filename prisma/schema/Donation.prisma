@@ -1,0 +1,103 @@
+// ============================================================================
+// Donation Model - Blood Donation Lifecycle
+// ============================================================================
+// Represents a blood donation event from collection through storage/usage.
+// Tracks donor information, blood details, medical vitals, and processing status.
+// Donations can fulfill blood requests or contribute to general inventory.
+// ============================================================================
+
+model Donation {
+  /// Unique identifier for donation record (UUID)
+  id String @id @default(uuid())
+
+  // --- Donor Information ---
+  /// Reference to User who donated the blood
+  donorId Int
+  donor   User @relation("UserDonations", fields: [donorId], references: [id], onDelete: Cascade)
+
+  // --- Blood Request Fulfillment ---
+  /// Optional reference to blood request this donation fulfills
+  bloodRequestId String?
+  bloodRequest   BloodRequest? @relation("RequestDonations", fields: [bloodRequestId], references: [id], onDelete: SetNull)
+
+  // --- Organization ---
+  /// Reference to organization that collected the donation
+  organizationId String
+  organization   Organization @relation("DonationOrganization", fields: [organizationId], references: [id], onDelete: Restrict)
+
+  // --- Collection Details ---
+  /// Number of blood units collected (typically 1 unit = 450-500 mL)
+  unitsCollected Int @default(1)
+
+  /// Reference to encrypted blood group information
+  bloodGroupId String
+  bloodGroup   Vault  @relation("DonationBloodGroup", fields: [bloodGroupId], references: [id])
+
+  // --- Donation Lifecycle Dates ---
+  /// Date and time blood was collected
+  donatedAt   DateTime  @default(now())
+  /// Estimated expiration date of the donated blood unit
+  expiresAt   DateTime?
+  /// When the blood was transfused to a recipient
+  transusedAt DateTime?
+
+  // --- Processing Status ---
+  /// Current stage of blood processing (COLLECTED, TESTED, STORED, TRANSFUSED, EXPIRED, DISCARDED, QUARANTINED)
+  status DonationStatus @default(COLLECTED)
+
+  // --- Medical Information at Collection ---
+  /// Reference to encrypted collection notes (procedure notes, observations)
+  collectionNoteId String?
+  collectionNote   Vault?  @relation("DonationCollectionNote", fields: [collectionNoteId], references: [id], onDelete: SetNull)
+
+  /// Reference to encrypted name of collecting doctor/phlebotomist
+  doctorNameId String?
+  doctorName   Vault?  @relation("DonationDoctorName", fields: [doctorNameId], references: [id], onDelete: SetNull)
+
+  /// Donor's body temperature at time of collection (°C)
+  temperature     Float?
+  /// Reference to encrypted blood pressure reading (systolic/diastolic)
+  bloodPressureId String?
+  bloodPressure   Vault?  @relation("DonationBloodPressure", fields: [bloodPressureId], references: [id], onDelete: SetNull)
+
+  // --- System Metadata ---
+  /// When this record was created in the system
+  createdAt DateTime @default(now())
+  /// Last modification timestamp
+  updatedAt DateTime @updatedAt
+
+  // --- Related Records ---
+  /// Blood test results for this donation
+  bloodTest   BloodTest?           @relation("BloodTest")
+  /// Appointment this donation was scheduled for
+  appointment DonationAppointment? @relation("AppointmentDonation")
+
+  // --- Database Indexes ---
+  /// Index for queries filtering by status and donation date
+  @@index([status, donatedAt])
+  /// Index for organizational inventory tracking
+  @@index([organizationId, donatedAt])
+  /// Index for donor donation history
+  @@index([donorId, donatedAt])
+}
+
+// ============================================================================
+// DonationStatus Enum - Blood Donation Processing States
+// ============================================================================
+/// State machine for blood donation processing workflow
+/// COLLECTED: Blood collected but not yet tested
+/// TESTED: Blood passed medical tests, safe for transfusion
+/// STORED: Blood in cold storage, ready for transfusion
+/// TRANSFUSED: Blood administered to a recipient
+/// EXPIRED: Blood past expiration date, removed from inventory
+/// DISCARDED: Blood discarded due to contamination/damage
+/// QUARANTINED: Blood under review, cannot be used yet
+enum DonationStatus {
+  COLLECTED
+  TESTED
+  STORED
+  TRANSFUSED
+  EXPIRED
+  DISCARDED
+  QUARANTINED
+}
