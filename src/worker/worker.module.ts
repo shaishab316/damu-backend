@@ -1,0 +1,50 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
+import { WinstonModule } from 'nest-winston';
+import {
+  validate as configValidate,
+  type Env,
+} from '../common/config/app.config';
+import { PrismaModule } from '../infra/prisma/prisma.module';
+import { RedisModule } from '../infra/redis/redis.module';
+import * as winston from 'winston';
+import LokiTransport from 'winston-loki';
+import { MailWorkerModule } from '@/infra/mail/mail-worker.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, validate: configValidate }),
+    WinstonModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => ({
+        transports: [
+          new winston.transports.Console({
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.colorize(),
+              winston.format.simple(),
+            ),
+          }),
+          new LokiTransport({
+            host: config.get('LOKI_URL', { infer: true }),
+            ...(config.get('LOKI_USER', { infer: true }) && {
+              basicAuth: `${config.get('LOKI_USER', { infer: true })}:${config.get('LOKI_PASSWORD', { infer: true })}`,
+            }),
+            labels: { job: 'nestjs-worker', app: 'damu' },
+          }),
+        ],
+      }),
+    }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => ({
+        connection: { url: config.get('REDIS_URL', { infer: true }) },
+      }),
+    }),
+    PrismaModule,
+    RedisModule,
+    MailWorkerModule,
+  ],
+})
+export class WorkerModule {}
