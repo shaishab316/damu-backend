@@ -21,5 +21,7 @@ export class MailProcessor extends WorkerHost {
       subject: job.data.subject,
       html: job.data.body,
     });
+
+    this.logger.log(`Email sent to ${job.data.email} for job id: ${job.id}`);
   }
 }

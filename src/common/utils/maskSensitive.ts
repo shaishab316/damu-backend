@@ -1,5 +1,5 @@
 export const SENSITIVE_PATTERN =
-  /password|token|secret|hash|key|auth|credential|otp|pin|cvv|ssn|card/i;
+  /password|token|secret|hash|key|auth|credential|otp|pin|cvv|ssn|card|email|name|gender|dob|phone/i;
 
 export const maskSensitiveFields = (
   body: Record<string, any>,

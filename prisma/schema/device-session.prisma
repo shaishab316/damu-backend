@@ -9,7 +9,7 @@ model DeviceSession {
   refreshTokenHash String       @unique
   deviceNameId     String?
   deviceName       Vault?       @relation("DeviceSessionDeviceInfo", fields: [deviceNameId], references: [id], onDelete: SetNull)
-  deviceType       String?
+  deviceType       DeviceType   @default(WEB)
   ipAddress        String?
   userAgent        String?
   lastActiveAt     DateTime     @default(now())
@@ -20,6 +20,16 @@ model DeviceSession {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+enum DeviceType {
+  WEB
+  MOBILE
+  TABLET
+  DESKTOP
+  WINDOWS
+  MACOS
+  LINUX
 }
 
 enum PushProvider {

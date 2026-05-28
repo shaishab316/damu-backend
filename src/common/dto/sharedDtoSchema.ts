@@ -141,7 +141,7 @@ export const sharedDtoSchema = {
       timezone?: string;
     } = {},
   ) =>
-    z.iso.date().transform((date) => {
+    z.iso.datetime().transform((date) => {
       const dateObj = new Date(date);
       const today = new Date();
       const path = options.path ?? 'data';

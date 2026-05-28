@@ -59,7 +59,10 @@ export class VaultService {
     return `${algo}:${iv.toString('hex')}:${encrypted.toString('hex')}`;
   }
 
-  decrypt(value: string, key: string): string {
+  decrypt(
+    value: string,
+    key: string = this.config.get('VAULT_ENCRYPTION_KEY'),
+  ): string {
     const parts = value.split(':');
     const algo = parts[0] as EncryptAlgo;
     const keyBuffer = Buffer.from(key, 'hex');
@@ -132,7 +135,7 @@ export class VaultService {
   async comparePassword(
     plain: string,
     hashed: string,
-    method = PasswordHashMethod.BCRYPT,
+    method = PasswordHashMethod.BCRYPT as PasswordHashMethod,
   ) {
     if (method !== PasswordHashMethod.BCRYPT) {
       throw new Error(`Unsupported password hash method: ${method}`);
