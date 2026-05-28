@@ -27,6 +27,7 @@ import { MediaModule } from './modules/media/media.module';
 import { UserModule } from './modules/user/user.module';
 import { VaultModule } from './modules/vault/vault.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { JwtStrategy } from './common/strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -93,7 +94,10 @@ import { AuthModule } from './modules/auth/auth.module';
     VaultModule,
     AuthModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: CustomThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: CustomThrottlerGuard },
+    JwtStrategy,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

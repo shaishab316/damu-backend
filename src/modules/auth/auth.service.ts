@@ -343,4 +343,43 @@ export class AuthService {
       },
     };
   }
+
+  async getDevices(userId: number) {
+    const deviceSessions = await this.prisma.deviceSession.findMany({
+      where: {
+        userId,
+      },
+      omit: {
+        pushProvider: true,
+        pushToken: true,
+        refreshTokenHash: true,
+        deviceNameId: true,
+      },
+      include: {
+        deviceName: true,
+      },
+      orderBy: {
+        lastActiveAt: 'desc',
+      },
+    });
+
+    return deviceSessions.map(({ deviceName, ...device }) => ({
+      ...device,
+      deviceName: this.vault.decrypt(deviceName?.encrypted) ?? 'Unknown',
+    }));
+  }
+
+  async logout(userId: number, deviceIds?: string[]) {
+    await this.prisma.deviceSession.deleteMany({
+      where: {
+        userId, //! important
+
+        ...(deviceIds?.length && {
+          id: {
+            in: deviceIds,
+          },
+        }),
+      },
+    });
+  }
 }

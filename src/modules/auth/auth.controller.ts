@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import {
@@ -6,9 +6,11 @@ import {
   LoginDto,
   ResetPasswordDto,
   RefreshTokenDto,
+  LogoutDto,
 } from './dto/login.dto';
 import { ApiResponse } from '@/common/types/api-response';
-import { AuthThrottle } from '@/common/decorators';
+import { AuthThrottle, CurrentUser } from '@/common/decorators';
+import { JwtGuard } from '@/common/guards';
 
 @Controller('auth')
 export class AuthController {
@@ -74,6 +76,30 @@ export class AuthController {
     return {
       message: 'Token refreshed successfully',
       data: result,
+    };
+  }
+
+  @Get('devices')
+  @UseGuards(JwtGuard)
+  async getDevices(@CurrentUser('id') userId: number): Promise<ApiResponse> {
+    const devices = await this.authService.getDevices(userId);
+
+    return {
+      message: 'Devices fetched successfully',
+      data: devices,
+    };
+  }
+
+  @Post('logout')
+  @UseGuards(JwtGuard)
+  async logout(
+    @CurrentUser('id') userId: number,
+    @Body() dto: LogoutDto,
+  ): Promise<ApiResponse> {
+    await this.authService.logout(userId, dto.ids);
+
+    return {
+      message: `Logged out from ${dto.ids?.length ?? 'all'} device(s)`,
     };
   }
 }

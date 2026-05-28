@@ -39,3 +39,9 @@ export const RefreshTokenSchema = z.object({
 });
 
 export class RefreshTokenDto extends createZodDto(RefreshTokenSchema) {}
+
+export const LogoutSchema = z.object({
+  ids: z.array(z.uuid('Invalid device ID')).optional(),
+});
+
+export class LogoutDto extends createZodDto(LogoutSchema) {}
