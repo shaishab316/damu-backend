@@ -8,7 +8,6 @@ import { VaultService } from '../vault/vault.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { detectDeviceType } from './helpers/device-detector';
-import { DeviceType } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +18,7 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto, userAgent?: string, ipAddress?: string) {
-    const { email, password } = dto;
+    const { email, password, pushToken, pushProvider } = dto;
 
     // Find user by email
     const user = await this.prisma.user.findFirst({
@@ -86,9 +85,11 @@ export class AuthService {
       data: {
         userId: user.id,
         refreshTokenHash,
-        deviceType: detectedDeviceType as DeviceType,
+        deviceType: detectedDeviceType,
         userAgent,
         ipAddress,
+        pushToken,
+        pushProvider: pushProvider,
         expiresAt,
       },
     });

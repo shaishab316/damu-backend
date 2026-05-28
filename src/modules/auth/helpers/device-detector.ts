@@ -1,25 +1,28 @@
+import { DeviceType } from '@prisma/client';
+
 /**
  * Detect device type from User-Agent string
  */
-export function detectDeviceType(userAgent?: string): string {
-  if (!userAgent) return 'WEB';
+export function detectDeviceType(userAgent?: string): DeviceType {
+  if (!userAgent) return DeviceType.WEB;
 
   const ua = userAgent.toLowerCase();
 
   // Desktop OS
-  if (ua.includes('windows')) return 'WINDOWS';
-  if (ua.includes('macintosh') || ua.includes('mac os')) return 'MACOS';
-  if (ua.includes('linux') && !ua.includes('android')) return 'LINUX';
+  if (ua.includes('windows')) return DeviceType.WINDOWS;
+  if (ua.includes('macintosh') || ua.includes('mac os'))
+    return DeviceType.MACOS;
+  if (ua.includes('linux') && !ua.includes('android')) return DeviceType.LINUX;
 
   // Mobile/Tablet
-  if (ua.includes('ipad') || ua.includes('tablet')) return 'TABLET';
+  if (ua.includes('ipad') || ua.includes('tablet')) return DeviceType.TABLET;
   if (
     ua.includes('mobile') ||
     ua.includes('iphone') ||
     ua.includes('android') ||
     ua.includes('webos')
   )
-    return 'MOBILE';
+    return DeviceType.MOBILE;
 
   // Default to WEB if desktop
   if (
@@ -28,9 +31,9 @@ export function detectDeviceType(userAgent?: string): string {
     ua.includes('safari') ||
     ua.includes('firefox')
   )
-    return 'WEB';
+    return DeviceType.WEB;
 
-  return 'WEB';
+  return DeviceType.WEB;
 }
 
 /**
