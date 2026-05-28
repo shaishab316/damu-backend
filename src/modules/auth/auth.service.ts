@@ -5,9 +5,11 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/infra/prisma/prisma.service';
 import { VaultService } from '../vault/vault.service';
-import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto, LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { detectDeviceType } from './helpers/device-detector';
+import { generateOTP } from '@/common/helpers/otp.helper';
+import { MailService } from '@/infra/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +17,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly vault: VaultService,
     private readonly jwt: JwtService,
+    private readonly mail: MailService,
   ) {}
 
   async login(dto: LoginDto, userAgent?: string, ipAddress?: string) {
@@ -124,5 +127,45 @@ export class AuthService {
         type: deviceSession.deviceType,
       },
     };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const { email } = dto;
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          is: {
+            hash: this.vault.hashPlain(email),
+          },
+        },
+      },
+      include: {
+        auth: true,
+      },
+    });
+
+    if (!user?.auth) {
+      return; // skip
+    }
+
+    const otp = generateOTP(6);
+
+    await this.prisma.auth.update({
+      where: {
+        id: user.auth.id,
+      },
+      data: {
+        otpHash: this.vault.hashPlain(otp),
+        // OTP expires in 15 minutes
+        otpExp: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+
+    await this.mail.sendMail({
+      email,
+      subject: 'Password Reset OTP',
+      body: `Your OTP for password reset is: ${otp}. It will expire in 15 minutes.`,
+    });
   }
 }

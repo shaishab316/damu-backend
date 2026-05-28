@@ -15,3 +15,11 @@ export const LoginSchema = z.object({
 });
 
 export class LoginDto extends createZodDto(LoginSchema) {}
+
+export const ForgotPasswordSchema = z.object({
+  email: _.email({
+    trustCheck: true,
+  }),
+});
+
+export class ForgotPasswordDto extends createZodDto(ForgotPasswordSchema) {}
