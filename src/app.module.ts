@@ -24,6 +24,7 @@ import { MAIL_QUEUE } from './infra/mail/mail.constants';
 import { SocketModule } from './infra/socket/socket.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MediaModule } from './modules/media/media.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { MediaModule } from './modules/media/media.module';
     }),
     SocketModule,
     MediaModule,
+    UserModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: CustomThrottlerGuard }],
 })
