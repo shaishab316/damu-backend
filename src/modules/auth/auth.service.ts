@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/infra/prisma/prisma.service';
 import { VaultService } from '../vault/vault.service';
-import { ForgotPasswordDto, LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto, LoginDto, ResetPasswordDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { detectDeviceType } from './helpers/device-detector';
 import { generateOTP } from '@/common/helpers/otp.helper';
@@ -54,6 +54,21 @@ export class AuthService {
       throw new BadRequestException('User password not set');
     }
 
+    if (!user.auth.isActive || !user.isActive || user.isBanned) {
+      throw new UnauthorizedException(
+        'Login not allowed. Please contact support.',
+      );
+    }
+
+    await this.prisma.auth.update({
+      where: {
+        id: user.auth.id,
+      },
+      data: {
+        loginAttempts: 0,
+      },
+    });
+
     // Verify password
     const isPasswordValid = await this.vault.comparePassword(
       password,
@@ -62,6 +77,31 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      const auth = await this.prisma.auth.update({
+        where: {
+          id: user.auth.id,
+        },
+        data: {
+          loginAttempts: {
+            increment: 1,
+          },
+        },
+      });
+
+      if (auth.loginAttempts >= 5) {
+        await this.prisma.auth.update({
+          where: {
+            id: user.auth.id,
+          },
+          data: {
+            isActive: false,
+
+            // 1 day letter
+            unlockAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        });
+      }
+
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -166,6 +206,54 @@ export class AuthService {
       email,
       subject: 'Password Reset OTP',
       body: `Your OTP for password reset is: ${otp}. It will expire in 15 minutes.`,
+    });
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const { email, otp, newPassword } = dto;
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          is: {
+            hash: this.vault.hashPlain(email),
+          },
+        },
+      },
+      include: {
+        auth: true,
+      },
+    });
+
+    if (
+      !user?.auth?.otpHash ||
+      !user.auth.otpExp ||
+      user.auth.otpExp < new Date()
+    ) {
+      throw new BadRequestException('Invalid email or OTP');
+    }
+
+    const isValidOtp = this.vault.comparePlain(otp, user.auth.otpHash);
+
+    if (!isValidOtp) {
+      throw new BadRequestException('Invalid email or OTP');
+    }
+
+    if (!newPassword) {
+      return; // skip - just validate OTP
+    }
+
+    const newPasswordHash = await this.vault.hashPassword(newPassword);
+
+    await this.prisma.auth.update({
+      where: {
+        id: user.auth.id,
+      },
+      data: {
+        ...newPasswordHash,
+        otpHash: null,
+        otpExp: null,
+      },
     });
   }
 }

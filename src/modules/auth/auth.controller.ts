@@ -1,7 +1,7 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
-import { ForgotPasswordDto, LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto, LoginDto, ResetPasswordDto } from './dto/login.dto';
 import { ApiResponse } from '@/common/types/api-response';
 import { AuthThrottle } from '@/common/decorators';
 
@@ -36,6 +36,16 @@ export class AuthController {
     return {
       message:
         'If an account with that email exists, a password reset OTP has been sent.',
+    };
+  }
+
+  @Post('reset-password')
+  @AuthThrottle()
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto);
+
+    return {
+      message: dto.newPassword ? 'Password reset successfully' : 'OTP is valid',
     };
   }
 }

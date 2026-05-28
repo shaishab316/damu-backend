@@ -23,3 +23,13 @@ export const ForgotPasswordSchema = z.object({
 });
 
 export class ForgotPasswordDto extends createZodDto(ForgotPasswordSchema) {}
+
+export const ResetPasswordSchema = z.object({
+  email: _.email({
+    trustCheck: true,
+  }),
+  otp: _.otp(6),
+  newPassword: _.password({ level: 'medium' }).optional(), // optional for check otp valid or not
+});
+
+export class ResetPasswordDto extends createZodDto(ResetPasswordSchema) {}
