@@ -60,9 +60,11 @@ export class VaultService {
   }
 
   decrypt(
-    value: string,
+    value: string | undefined | null = null,
     key: string = this.config.get('VAULT_ENCRYPTION_KEY'),
-  ): string {
+  ) {
+    if (!value) return;
+
     const parts = value.split(':');
     const algo = parts[0] as EncryptAlgo;
     const keyBuffer = Buffer.from(key, 'hex');

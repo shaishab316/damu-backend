@@ -142,21 +142,11 @@ export class AuthService {
         id: user.id,
         isActive: user.isActive,
         isBanned: user.isBanned,
-        name: user.name?.encrypted
-          ? this.vault.decrypt(user.name.encrypted)
-          : null,
-        email: user.email?.encrypted
-          ? this.vault.decrypt(user.email.encrypted)
-          : null,
-        phone: user.phone?.encrypted
-          ? this.vault.decrypt(user.phone.encrypted)
-          : null,
-        dob: user.dob?.encrypted
-          ? this.vault.decrypt(user.dob.encrypted)
-          : null,
-        gender: user.gender?.encrypted
-          ? this.vault.decrypt(user.gender.encrypted)
-          : null,
+        name: this.vault.decrypt(user.name?.encrypted),
+        email: this.vault.decrypt(user.email?.encrypted),
+        phone: this.vault.decrypt(user.phone?.encrypted),
+        dob: this.vault.decrypt(user.dob?.encrypted),
+        gender: this.vault.decrypt(user.gender?.encrypted),
       },
       tokens: {
         accessToken,
