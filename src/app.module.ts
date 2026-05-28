@@ -23,6 +23,7 @@ import { MailModule } from './infra/mail/mail.module';
 import { MAIL_QUEUE } from './infra/mail/mail.constants';
 import { SocketModule } from './infra/socket/socket.module';
 import { JwtModule } from '@nestjs/jwt';
+import { MediaModule } from './modules/media/media.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { JwtModule } from '@nestjs/jwt';
       adapter: BullMQAdapter,
     }),
     SocketModule,
+    MediaModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: CustomThrottlerGuard }],
 })

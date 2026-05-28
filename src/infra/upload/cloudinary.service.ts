@@ -6,6 +6,8 @@ export interface UploadResult {
   url: string;
   publicId: string;
   attachmentType: string;
+  width?: number;
+  height?: number;
 }
 
 export interface UploadOptions {
@@ -59,6 +61,8 @@ export class CloudinaryService {
       url: result.secure_url,
       publicId: result.public_id,
       attachmentType: result.resource_type,
+      width: result.width,
+      height: result.height,
     };
   }
 
