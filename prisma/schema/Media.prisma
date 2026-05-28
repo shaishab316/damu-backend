@@ -3,15 +3,22 @@
 // ============================================================================
 
 model Media {
-  id               String          @id @default(uuid())
-  userId           Int?
-  user             User?           @relation("UserMedia", fields: [userId], references: [id], onDelete: SetNull)
-  postId           String?
-  post             Post?           @relation("PostMedia", fields: [postId], references: [id], onDelete: SetNull)
-  messageId        String?
-  message          Message?        @relation("MessageMedia", fields: [messageId], references: [id], onDelete: SetNull)
-  conversationId   String?         @unique
-  conversation     Conversation?   @relation("ConversationLogo", fields: [conversationId], references: [id], onDelete: SetNull)
+  id             String        @id @default(uuid())
+  userId         Int?
+  user           User?         @relation("UserMedia", fields: [userId], references: [id], onDelete: SetNull)
+  postId         String?
+  post           Post?         @relation("PostMedia", fields: [postId], references: [id], onDelete: SetNull)
+  messageId      String?
+  message        Message?      @relation("MessageMedia", fields: [messageId], references: [id], onDelete: SetNull)
+  conversationId String?       @unique
+  conversation   Conversation? @relation("ConversationLogo", fields: [conversationId], references: [id], onDelete: SetNull)
+
+  profilePictureId String?  @unique
+  profilePicture   Profile? @relation("ProfilePicture", fields: [profilePictureId], references: [id], onDelete: SetNull)
+
+  profileBannerId String?
+  profileBanner   Profile? @relation("ProfileBanner", fields: [profileBannerId], references: [id], onDelete: SetNull)
+
   url              String
   type             MediaType
   mimeType         String?

@@ -7,7 +7,16 @@ model Profile {
   userId Int?   @unique
   user   User?  @relation("UserProfile", fields: [userId], references: [id], onDelete: SetNull)
 
+  picture Media?  @relation("ProfilePicture")
+  banner  Media[] @relation("ProfileBanner")
+
+  isPublic   Boolean? @default(true)
+  isVerified Boolean? @default(false)
+  totalView  Int?     @default(0)
+  totalLike  Int?     @default(0)
+
   donationProfile DonationProfile? @relation("DonationProfile")
+  mediaId         String?
 }
 
 model DonationProfile {

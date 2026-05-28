@@ -20,6 +20,13 @@ export class UserService {
 
     const user = await this.prisma.user.create({
       data: {
+        profile: {
+          create: {
+            donationProfile: {
+              create: {},
+            },
+          },
+        },
         auth: {
           create: {
             ...(await this.vault.hashPassword(password)),
@@ -29,7 +36,12 @@ export class UserService {
         },
         ...(name && {
           name: {
-            create: this.vault.createVault(name, 'user.name'),
+            connectOrCreate: {
+              where: {
+                hash: this.vault.hashPlain(name),
+              },
+              create: this.vault.createVault(name, 'user.name'),
+            },
           },
         }),
         ...(email && {
@@ -44,7 +56,12 @@ export class UserService {
         }),
         ...(dob && {
           dob: {
-            create: this.vault.createVault(dob.toISOString(), 'user.dob'),
+            connectOrCreate: {
+              where: {
+                hash: this.vault.hashPlain(dob.toISOString()),
+              },
+              create: this.vault.createVault(dob.toISOString(), 'user.dob'),
+            },
           },
         }),
         ...(gender && {

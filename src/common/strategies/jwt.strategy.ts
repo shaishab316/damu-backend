@@ -42,11 +42,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     try {
       // const user = await this.userRepository.findById(payload.sub);
 
-      const user = {};
+      const user = {
+        id: parseInt(payload.sub, 10),
+        identifier: payload.identifier,
+      };
 
-      if (!user) {
-        this.logger.warn(`User not found for ID: ${payload.sub}`);
-        throw new UnauthorizedException('User not found');
+      if (!user.id) {
+        this.logger.warn(`Invalid user ID in JWT payload: ${payload.sub}`);
+        throw new UnauthorizedException('Invalid token');
       }
 
       this.logger.debug(`User ${payload.sub} authenticated successfully`);

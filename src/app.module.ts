@@ -28,6 +28,7 @@ import { UserModule } from './modules/user/user.module';
 import { VaultModule } from './modules/vault/vault.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtStrategy } from './common/strategies/jwt.strategy';
+import { FollowModule } from './modules/follow/follow.module';
 
 @Module({
   imports: [
@@ -93,6 +94,7 @@ import { JwtStrategy } from './common/strategies/jwt.strategy';
     UserModule,
     VaultModule,
     AuthModule,
+    FollowModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: CustomThrottlerGuard },
