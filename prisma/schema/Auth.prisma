@@ -10,12 +10,9 @@ model Auth {
   otpExp             DateTime?
   canResetPassword   Boolean?            @default(false)
   loginAttempts      Int                 @default(0)
-  lastLogin          DateTime?
   twoFactorEnabled   Boolean?            @default(false)
   twoFactorSecretId  String?
   twoFactorSecret    Vault?              @relation("AuthTwoFactorSecret", fields: [twoFactorSecretId], references: [id], onDelete: SetNull)
-  deviceInfoId       String?
-  deviceInfo         Vault?              @relation("AuthDeviceInfo", fields: [deviceInfoId], references: [id], onDelete: SetNull)
   isEmailVerified    Boolean?            @default(false)
   isPhoneVerified    Boolean?            @default(false)
   isActive           Boolean             @default(true)

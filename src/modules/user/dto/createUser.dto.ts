@@ -1,4 +1,5 @@
 import { sharedDtoSchema as _ } from '@/common/dto/sharedDtoSchema';
+import { createZodDto } from 'nestjs-zod';
 import z from 'zod';
 
 export const CreateUserSchema = z.object({
@@ -15,4 +16,7 @@ export const CreateUserSchema = z.object({
     },
     removeTime: true,
   }).optional(),
+  gender: _.gender({ allowed: ['MALE', 'FEMALE'] }).optional(),
 });
+
+export class CreateUserDto extends createZodDto(CreateUserSchema) {}

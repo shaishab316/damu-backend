@@ -22,7 +22,9 @@ model Vault {
 
   // Auth
   twoFactorSecretUser Auth[] @relation("AuthTwoFactorSecret")
-  deviceInfoUser      Auth[] @relation("AuthDeviceInfo")
+
+  //DeviceSessionDeviceInfo
+  deviceInfoDeviceSession DeviceSession[] @relation("DeviceSessionDeviceInfo")
 
   // DonationProfile
   weightUser           DonationProfile[] @relation("DonationProfileWeight")

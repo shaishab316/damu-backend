@@ -139,7 +139,6 @@ export const sharedDtoSchema = {
       noWeekday?: boolean;
       allowedDaysOfWeek?: number[];
       timezone?: string;
-      format?: 'iso' | 'date' | 'datetime';
     } = {},
   ) =>
     z.iso.date().transform((date) => {
@@ -229,14 +228,20 @@ export const sharedDtoSchema = {
         }
       }
 
-      if (options.format === 'iso') return dateObj.toISOString();
-      if (options.format === 'date') return dateObj.toISOString().split('T')[0];
-      if (options.format === 'datetime') {
-        return options.timezone
-          ? dateObj.toLocaleString('en-US', { timeZone: options.timezone })
-          : dateObj.toISOString();
-      }
-
       return dateObj;
     }),
+
+  gender: (
+    options: {
+      path?: string;
+      allowed?: ('MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY')[];
+    } = {},
+  ) => {
+    const all = ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'] as const;
+    const values = options.allowed ?? all;
+
+    return z
+      .enum(values as unknown as [string, ...string[]])
+      .transform((val) => val);
+  },
 };

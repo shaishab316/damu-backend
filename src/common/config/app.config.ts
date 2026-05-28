@@ -169,6 +169,21 @@ const envSchema = z.object({
     .string()
     .min(6, 'QUEUES_PASSWORD must be at least 6 characters')
     .describe('Password for /queues access'),
+
+  VAULT_ENCRYPTION_KEY_ID: z
+    .string()
+    .min(1, 'VAULT_ENCRYPTION_KEY_ID is required')
+    .describe('Key ID for vault encryption key management'),
+
+  VAULT_ENCRYPTION_KEY: z
+    .string()
+    .min(64, 'VAULT_ENCRYPTION_KEY must be a 32-byte hex string')
+    .describe('32-byte hex string used for vault encryption and hashing'),
+
+  CURRENT_ALGORITHM: z
+    .enum(['aes-256-gcm', 'aes-256-cbc', 'aes-128-cbc'])
+    .default('aes-256-gcm')
+    .describe('Current encryption algorithm for vault entries'),
 });
 
 export const validate = (config: Record<string, unknown>) => {

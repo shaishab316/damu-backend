@@ -7,7 +7,8 @@ model DeviceSession {
   userId           Int
   user             User         @relation("UserDeviceSessions", fields: [userId], references: [id], onDelete: Cascade)
   refreshTokenHash String       @unique
-  deviceName       String?
+  deviceNameId     String?
+  deviceName       Vault?       @relation("DeviceSessionDeviceInfo", fields: [deviceNameId], references: [id], onDelete: SetNull)
   deviceType       String?
   ipAddress        String?
   userAgent        String?

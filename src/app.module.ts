@@ -25,6 +25,7 @@ import { SocketModule } from './infra/socket/socket.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MediaModule } from './modules/media/media.module';
 import { UserModule } from './modules/user/user.module';
+import { VaultModule } from './modules/vault/vault.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { UserModule } from './modules/user/user.module';
     SocketModule,
     MediaModule,
     UserModule,
+    VaultModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: CustomThrottlerGuard }],
 })
