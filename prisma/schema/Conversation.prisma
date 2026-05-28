@@ -1,122 +1,61 @@
 // ============================================================================
-// Conversation Models - Messaging & Chat System
-// ============================================================================
-// Models for user-to-user messaging conversations, group chats, and message
-// delivery. Supports message replies, media attachments, and read receipts.
+// CONVERSATION & MESSAGING
 // ============================================================================
 
 model Conversation {
-  /// Unique identifier for conversation (UUID)
-  id String @id @default(uuid())
+  id            String    @id @default(uuid())
+  nameId        String?
+  name          Vault?    @relation("ConversationName", fields: [nameId], references: [id], onDelete: SetNull)
+  isGroup       Boolean   @default(false)
+  type          String    @default("DIRECT")
+  creatorId     Int
+  logoId        String?   @unique
+  logo          Media?    @relation("ConversationLogo")
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  // --- Conversation Metadata ---
-  /// Reference to encrypted conversation name/topic (null for direct messages)
-  nameId String?
-  name   Vault?  @relation("ConversationName", fields: [nameId], references: [id], onDelete: SetNull)
-
-  /// Group conversation logo/avatar (Media attachment)
-  logo Media? @relation("ConversationLogo")
-
-  // --- Participants & Messages ---
-  /// Users participating in this conversation
   participants ConversationParticipant[] @relation("ConversationParticipants")
-  /// Messages in this conversation
   messages     Message[]                 @relation("ConversationMessages")
+
+  @@index([isGroup, createdAt])
 }
 
-// ============================================================================
-// ConversationParticipant Model - Users in a Conversation
-// ============================================================================
-/// Represents user participation in a conversation with read status tracking
 model ConversationParticipant {
-  /// Unique identifier for participant record (UUID)
-  id String @id @default(uuid())
-
-  // --- Conversation Reference ---
-  /// Reference to conversation
+  id             String       @id @default(uuid())
   conversationId String
   conversation   Conversation @relation("ConversationParticipants", fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         Int
+  user           User         @relation("UserConversationParticipants", fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("MEMBER")
+  joinedAt       DateTime     @default(now())
+  leftAt         DateTime?
+  lastReadAt     DateTime?
+  isMuted        Boolean      @default(false)
+  isPinned       Boolean      @default(false)
 
-  // --- User Reference ---
-  /// Reference to participating user
-  userId Int
-  user   User @relation("UserConversationParticipants", fields: [userId], references: [id], onDelete: Cascade)
-
-  // --- Read Status ---
-  /// Reference to last message read by this participant
-  lastReadMsgId String?
-  lastReadMsg   Message? @relation("LastReadMessage", fields: [lastReadMsgId], references: [id], onDelete: SetNull)
-
-  // --- Permissions ---
-  /// Whether participant is an admin (can manage conversation)
-  isAdmin Boolean @default(false)
-  /// Whether participant is the owner/creator (typically one per conversation)
-  isOwner Boolean @default(false)
-
-  // --- Timestamps ---
-  /// When this user joined the conversation
-  createdAt DateTime @default(now())
-  /// Last modification timestamp
-  updatedAt DateTime @updatedAt
-
-  // --- Constraints ---
-  /// Ensure one participant record per user per conversation
   @@unique([conversationId, userId])
+  @@index([userId, conversationId])
 }
 
-// ============================================================================
-// Message Model - Chat Messages
-// ============================================================================
-/// Represents individual messages sent in conversations, with support for
-/// replies, media attachments, editing, and message expiration.
 model Message {
-  /// Unique identifier for message (UUID)
-  id String @id @default(uuid())
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation("ConversationMessages", fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       Int
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  contentId      String?
+  content        Vault?       @relation("MessageContent", fields: [contentId], references: [id], onDelete: SetNull)
+  media          Media[]      @relation("MessageMedia")
+  type           String       @default("TEXT")
+  replyToId      String?
+  replyTo        Message?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies        Message[]    @relation("MessageReplies")
+  isEdited       Boolean      @default(false)
+  editedAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  // --- Content ---
-  /// Reference to encrypted message text content
-  contentId String?
-  content   Vault?  @relation("MessageContent", fields: [contentId], references: [id], onDelete: SetNull)
-
-  /// Media files attached to this message
-  media Media[] @relation("MessageMedia")
-
-  // --- Sender ---
-  /// Reference to message sender
-  senderId Int?
-  sender   User? @relation("SentMessages", fields: [senderId], references: [id], onDelete: SetNull)
-
-  // --- Conversation ---
-  /// Reference to conversation this message belongs to
-  conversationId String?
-  conversation   Conversation? @relation("ConversationMessages", fields: [conversationId], references: [id], onDelete: SetNull)
-
-  // --- Read Receipts ---
-  /// Participants who have read this message (via lastReadMsgId)
-  readBy ConversationParticipant[] @relation("LastReadMessage")
-
-  // --- Edit History ---
-  /// Whether message has been edited
-  isEdited Boolean @default(false)
-
-  // --- Message Threading ---
-  /// Reference to parent message (if this is a reply)
-  parentMessageId String?
-  parentMessage   Message?  @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: Cascade)
-  /// Replies to this message
-  replies         Message[] @relation("MessageReplies")
-
-  // --- Message Expiration (for ephemeral messages) ---
-  /// When this message expires and should be deleted (e.g., "message expires in 24h")
-  ttl DateTime?
-
-  // --- Timestamps ---
-  /// When message was sent
-  createdAt DateTime @default(now())
-
-  // --- Database Indexes ---
-  /// Index for conversation message history
   @@index([conversationId, createdAt])
-  /// Index for user's sent messages
   @@index([senderId, createdAt])
 }

@@ -1,159 +1,82 @@
 // ============================================================================
-// Vault Model - Encrypted Data Storage
-// ============================================================================
-// Central encrypted data vault for storing sensitive personal information (PII).
-// Instead of storing sensitive data directly in models, we store references to
-// Vault records. Data is encrypted with configurable algorithms and key
-// rotation support.
-//
-// Design Pattern:
-// - Sensitive fields reference Vault IDs instead of storing data directly
-// - Data is encrypted at rest using aes-256-gcm (default) or other algorithms
-// - Hash field enables lookups without decrypting (e.g., find by email hash)
-// - Version field supports key rotation and algorithm updates
+// VAULT - Central Encrypted PII Store
 // ============================================================================
 
 model Vault {
-  /// Unique identifier for encrypted record (UUID)
-  id String @id @default(uuid())
-
-  // --- Encrypted Data ---
-  /// Encrypted value of sensitive information
+  id        String   @id @default(uuid())
+  type      String
   encrypted String?
-  /// Hash of value for lookups without decryption (e.g., find by email hash)
-  hash      String? @unique
-
-  // --- Encryption Metadata ---
-  /// Encryption key ID (for key rotation and versioning)
+  hash      String?  @unique
   keyId     String
-  /// Algorithm used for encryption (default: aes-256-gcm)
-  algorithm String @default("aes-256-gcm")
-  /// Version number (for tracking algorithm/key changes)
-  version   Int    @default(1)
-
-  // --- Timestamps ---
-  /// When encrypted record was created
+  algorithm String   @default("aes-256-gcm")
+  version   Int      @default(1)
   createdAt DateTime @default(now())
-  /// Last modification timestamp
   updatedAt DateTime @updatedAt
 
-  // ========== Relationships by Domain ==========
-
-  // --- User Profile Encrypted Fields ---
-  /// User full names
+  // User
   nameUser   User[] @relation("UserName")
-  /// User email addresses
   emailUser  User?  @relation("UserEmail")
-  /// User phone numbers
   phoneUser  User?  @relation("UserPhone")
-  /// User dates of birth
   dobUser    User[] @relation("UserDOB")
-  /// User gender information
   genderUser User[] @relation("UserGender")
 
-  // --- Authentication Encrypted Fields ---
-  /// 2FA TOTP secrets
+  // Auth
   twoFactorSecretUser Auth[] @relation("AuthTwoFactorSecret")
-  /// Trusted device information
   deviceInfoUser      Auth[] @relation("AuthDeviceInfo")
 
-  // --- Donation Profile Encrypted Fields ---
-  /// Blood group information
-  bloodGroupUser       DonationProfile[] @relation("DonationProfileBloodGroup")
-  /// Body weight (donation eligibility)
+  // DonationProfile
   weightUser           DonationProfile[] @relation("DonationProfileWeight")
-  /// Emergency contact information
   emergencyContactUser DonationProfile[] @relation("DonationEmergencyContact")
 
-  // --- Blood Request Encrypted Fields ---
-  /// Blood group needed in request
-  bloodGroupRequest BloodRequest[] @relation("RequestBloodGroup")
-  /// Clinical notes/requirements in request
-  noteRequest       BloodRequest[] @relation("RequestNote")
+  // BloodRequest
+  noteRequest BloodRequest[] @relation("RequestNote")
 
-  // --- Organization Encrypted Fields ---
-  /// Organization name
+  // Organization
   organizationName    Organization[] @relation("OrganizationName")
-  /// Organization contact phone
   organizationPhone   Organization[] @relation("OrganizationPhone")
-  /// Organization contact email
   organizationEmail   Organization[] @relation("OrganizationEmail")
-  /// Organization license number
   organizationLicense Organization[] @relation("OrganizationLicense")
 
-  // --- Donation Encrypted Fields ---
-  /// Blood group of donation
-  donationBloodGroup     Donation[] @relation("DonationBloodGroup")
-  /// Collection notes during donation
+  // Donation
   donationCollectionNote Donation[] @relation("DonationCollectionNote")
-  /// Doctor/phlebotomist name who collected
   donationDoctorName     Donation[] @relation("DonationDoctorName")
-  /// Blood pressure reading during donation
   donationBloodPressure  Donation[] @relation("DonationBloodPressure")
 
-  // --- Blood Test Encrypted Fields ---
-  /// HIV test result
+  // BloodTest
   bloodTestHIV            BloodTest[] @relation("BloodTestHIV")
-  /// Hepatitis B test result
   bloodTestHepatitisB     BloodTest[] @relation("BloodTestHepatitisB")
-  /// Hepatitis C test result
   bloodTestHepatitisC     BloodTest[] @relation("BloodTestHepatitisC")
-  /// Syphilis test result
   bloodTestSyphilis       BloodTest[] @relation("BloodTestSyphilis")
-  /// Blood typing verification result
   bloodTestBloodTyping    BloodTest[] @relation("BloodTestBloodTyping")
-  /// Other test results
   bloodTestOther          BloodTest[] @relation("BloodTestOther")
-  /// Lab technician name who performed tests
   bloodTestLabTechnician  BloodTest[] @relation("BloodTestLabTechnician")
-  /// Test approval status
   bloodTestApprovalStatus BloodTest[] @relation("BloodTestApprovalStatus")
-  /// Lab remarks/notes
   bloodTestRemarks        BloodTest[] @relation("BloodTestRemarks")
 
-  // --- Medical History Encrypted Fields ---
-  /// Chronic medical conditions
+  // MedicalHistory
   medicalHistoryConditions     DonorMedicalHistory[] @relation("MedicalHistoryConditions")
-  /// Current medications
   medicalHistoryMedications    DonorMedicalHistory[] @relation("MedicalHistoryMedications")
-  /// Known allergies
   medicalHistoryAllergies      DonorMedicalHistory[] @relation("MedicalHistoryAllergies")
-  /// Blood disorders
   medicalHistoryBloodDisorders DonorMedicalHistory[] @relation("MedicalHistoryBloodDisorders")
-  /// Reason for deferral
   medicalHistoryDeferralReason DonorMedicalHistory[] @relation("MedicalHistoryDeferralReason")
-  /// Health screening notes
   medicalHistoryScreeningNote  DonorMedicalHistory[] @relation("MedicalHistoryScreeningNote")
-  /// Screening doctor name
   medicalHistoryDoctorName     DonorMedicalHistory[] @relation("MedicalHistoryDoctorName")
 
-  // --- Blood Inventory Encrypted Fields ---
-  /// Blood group in inventory
-  inventoryBloodGroup BloodInventory[] @relation("InventoryBloodGroup")
-
-  // --- Donation Appointment Encrypted Fields ---
-  /// Appointment notes
+  // Appointment
   appointmentNotes              DonationAppointment[] @relation("AppointmentNotes")
-  /// Appointment cancellation reason
   appointmentCancellationReason DonationAppointment[] @relation("AppointmentCancellationReason")
 
-  // --- Social Features Encrypted Fields ---
-  /// Post content/body
+  // Social
   postContent         Post[]         @relation("PostContent")
-  /// Reason post marked sensitive
   postSensitiveReason Post[]         @relation("PostSensitiveReason")
-  /// Comment content/text
   commentContent      PostComment[]  @relation("CommentContent")
-  /// Notification title
   notificationTitle   Notification[] @relation("NotificationTitle")
-  /// Notification message body
   notificationMessage Notification[] @relation("NotificationMessage")
+  messageContent      Message[]      @relation("MessageContent")
+  conversationName    Conversation[] @relation("ConversationName")
 
-  // --- Messaging Encrypted Fields ---
-  /// Message content/body
-  messageContent Message[] @relation("MessageContent")
-
-  // --- Conversation Encrypted Fields ---
-  /// Conversation name/topic
-  conversationName Conversation[] @relation("ConversationName")
+  // Group
+  groupName        Group[] @relation("GroupName")
+  groupDescription Group[] @relation("GroupDescription")
+  groupRules       Group[] @relation("GroupRules")
 }

@@ -1,11 +1,13 @@
 {
   "cSpell.words": [
+    "ACTIONED",
     "appendonly",
     "bullmq",
     "dotenv",
     "geohash",
     "Millis",
     "ngeohash",
+    "ONESIGNAL",
     "setex",
     "transused",
     "WITHSCORES",

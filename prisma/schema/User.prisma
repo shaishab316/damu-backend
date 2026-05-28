@@ -1,99 +1,52 @@
 // ============================================================================
-// User Model - Core Identity & User Account
-// ============================================================================
-// Represents the primary user account in the system. Stores references to
-// encrypted user data via Vault for PII (Personally Identifiable Information).
-// This model is the anchor point for all user-related entities.
+// USER
 // ============================================================================
 
 model User {
-  /// Unique identifier for the user (auto-incrementing)
   id Int @id @default(autoincrement())
 
-  // --- Encrypted Personal Information (via Vault) ---
-  /// Reference to encrypted full name
-  nameId String?
-  name   Vault?  @relation("UserName", fields: [nameId], references: [id], onDelete: SetNull)
-
-  /// Reference to unique encrypted email address
-  emailId String? @unique
-  /// Reference to unique encrypted phone number
-  phoneId String? @unique
-
-  /// Relation to decrypt email when needed
-  email Vault? @relation("UserEmail", fields: [emailId], references: [id], onDelete: SetNull)
-  /// Relation to decrypt phone when needed
-  phone Vault? @relation("UserPhone", fields: [phoneId], references: [id], onDelete: SetNull)
-
-  /// Reference to encrypted date of birth
-  dobId String?
-  dob   Vault?  @relation("UserDOB", fields: [dobId], references: [id], onDelete: SetNull)
-
-  /// Reference to encrypted gender information
+  nameId   String?
+  name     Vault?  @relation("UserName", fields: [nameId], references: [id], onDelete: SetNull)
+  emailId  String? @unique
+  email    Vault?  @relation("UserEmail", fields: [emailId], references: [id], onDelete: SetNull)
+  phoneId  String? @unique
+  phone    Vault?  @relation("UserPhone", fields: [phoneId], references: [id], onDelete: SetNull)
+  dobId    String?
+  dob      Vault?  @relation("UserDOB", fields: [dobId], references: [id], onDelete: SetNull)
   genderId String?
   gender   Vault?  @relation("UserGender", fields: [genderId], references: [id], onDelete: SetNull)
 
-  // --- System Metadata ---
-  /// Account creation timestamp
+  isActive Boolean   @default(true)
+  isBanned Boolean   @default(false)
+  bannedAt DateTime?
+
   createdAt DateTime @default(now())
-  /// Last account modification timestamp
   updatedAt DateTime @updatedAt
 
-  // --- User Profile & Location ---
-  /// Geographic location information (latitude, longitude, address, etc.)
-  location Location?
-  /// Extended user profile with donation-specific data
-  profile  Profile?  @relation("UserProfile")
-
-  // --- Authentication & Security ---
-  /// Authentication credentials and security settings
-  auth Auth? @relation("AuthUser")
-
-  // --- Blood Donation Features ---
-  /// Blood requests created by this user
-  bloodRequests             BloodRequest[]         @relation("UserBloodRequests")
-  /// Responses to other users' blood requests (as a donor)
-  donorResponses            BloodRequestResponse[] @relation("UserDonorResponses")
-  /// Uploaded media files (profiles, documents, etc.)
-  media                     Media[]                @relation("UserMedia")
-  /// Blood donations given by this user
-  donations                 Donation[]             @relation("UserDonations")
-  /// Scheduled donation appointments
-  appointments              DonationAppointment[]  @relation("UserAppointments")
-  /// Medical history and eligibility information
-  medicalHistory            DonorMedicalHistory?   @relation("UserMedicalHistory")
-  /// Organizations administered by this user (staff/admin role)
-  administeredOrganizations Organization[]         @relation("OrganizationAdmin")
-
-  // --- Social Features ---
-  /// Posts created by this user (blog-style content)
-  posts        Post[]            @relation("UserPosts")
-  /// Comments authored by this user on other posts
-  postComments PostComment[]     @relation("UserComments")
-  /// Likes given by this user on comments
-  commentLikes PostCommentLike[] @relation("UserCommentLikes")
-  /// Posts saved/bookmarked by this user
-  savedPosts   SavedPost[]       @relation("UserSavedPosts")
-
-  // --- User Following/Followers ---
-  /// Users that this user follows
-  following Follow[] @relation("Following")
-  /// Users that follow this user
-  followers Follow[] @relation("Followers")
-
-  // --- Notifications ---
-  /// Notifications directed to this user
-  notifications      Notification[] @relation("UserNotifications")
-  /// Notifications where this user is the actor (e.g., received a like)
-  notificationActors Notification[] @relation("NotificationActors")
-
-  // --- Collections & Saved Items ---
-  /// Collections of content saved by this user (e.g., curated blood requests)
-  savedCollections SavedCollection[] @relation("UserSavedCollections")
-
-  // --- Messaging & Conversations ---
-  /// Conversations this user participates in
-  conversations ConversationParticipant[] @relation("UserConversationParticipants")
-  /// Messages sent by this user
-  sentMessages  Message[]                 @relation("SentMessages")
+  location          Location?
+  profile           Profile?                  @relation("UserProfile")
+  auth              Auth?                     @relation("AuthUser")
+  deviceSessions    DeviceSession[]           @relation("UserDeviceSessions")
+  bloodRequests     BloodRequest[]            @relation("UserBloodRequests")
+  donorResponses    BloodRequestResponse[]    @relation("UserDonorResponses")
+  media             Media[]                   @relation("UserMedia")
+  donations         Donation[]                @relation("UserDonations")
+  appointments      DonationAppointment[]     @relation("UserAppointments")
+  medicalHistory    DonorMedicalHistory?      @relation("UserMedicalHistory")
+  administeredOrgs  Organization[]            @relation("OrganizationAdmin")
+  posts             Post[]                    @relation("UserPosts")
+  postComments      PostComment[]             @relation("UserComments")
+  commentLikes      PostCommentLike[]         @relation("UserCommentLikes")
+  savedPosts        SavedPost[]               @relation("UserSavedPosts")
+  savedCollections  SavedCollection[]         @relation("UserSavedCollections")
+  following         Follow[]                  @relation("Following")
+  followers         Follow[]                  @relation("Followers")
+  notifications     Notification[]            @relation("UserNotifications")
+  notificationActor Notification[]            @relation("NotificationActors")
+  conversations     ConversationParticipant[] @relation("UserConversationParticipants")
+  sentMessages      Message[]                 @relation("SentMessages")
+  groupMemberships  GroupMember[]             @relation("UserGroupMemberships")
+  reports           Report[]                  @relation("UserReports")
+  resolvedReports   Report[]                  @relation("ReportResolver")
+  auditLogs         AuditLog[]                @relation("AuditActor")
 }

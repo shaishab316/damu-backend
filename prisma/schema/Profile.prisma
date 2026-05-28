@@ -1,93 +1,53 @@
 // ============================================================================
-// Profile Models - User Profiles & Donation Information
-// ============================================================================
-// Models for storing user profile information, including donation-specific
-// data (blood group, eligibility status, preferences, etc.).
+// PROFILE
 // ============================================================================
 
-model DonationProfile {
-  /// Unique identifier for donation profile (UUID)
-  id String @id @default(uuid())
-
-  // --- Profile Reference ---
-  /// Reference to parent user profile (one-to-one)
-  profileId String?  @unique
-  profile   Profile? @relation("DonationProfile", fields: [profileId], references: [id], onDelete: SetNull)
-
-  // --- Blood Information ---
-  /// Reference to encrypted blood group (O+, O-, B+, B-, A+, A-, AB+, AB-)
-  bloodGroupId String?
-  bloodGroup   Vault?  @relation("DonationProfileBloodGroup", fields: [bloodGroupId], references: [id], onDelete: SetNull)
-
-  /// Reference to encrypted body weight (used to determine donation eligibility)
-  weightId String?
-  weight   Vault?  @relation("DonationProfileWeight", fields: [weightId], references: [id], onDelete: SetNull)
-
-  // --- Donation Eligibility & Status ---
-  /// Current availability status (AVAILABLE, TEMPORARILY_DEFERRED, PERMANENTLY_DEFERRED, BUSY)
-  status AvailabilityStatus @default(AVAILABLE)
-
-  /// Total number of successful donations given by this donor
-  totalDonations Int       @default(0)
-  /// Timestamp of most recent donation
-  lastDonatedAt  DateTime?
-  /// When donor becomes eligible to donate again (recovery period: typically 56 days)
-  nextEligibleAt DateTime?
-
-  // --- Donation Preferences ---
-  /// Maximum distance (in kilometers) donor is willing to travel for donation
-  maxTravelDistanceKm Int @default(10)
-
-  /// Preferred time slots for donations (stored as JSON strings or time codes)
-  preferredTimes String[]
-
-  // --- Emergency Contact ---
-  /// Reference to encrypted emergency contact information
-  emergencyContactId String?
-  emergencyContact   Vault?  @relation("DonationEmergencyContact", fields: [emergencyContactId], references: [id], onDelete: SetNull)
-
-  // --- Posts & Content ---
-  /// Posts created by this donor (e.g., blood type availability announcements)
-  posts Post[] @relation("PostDonationProfile")
-
-  // --- System Metadata ---
-  /// When this donation profile was created
-  createdAt DateTime @default(now())
-  /// Last modification timestamp
-  updatedAt DateTime @updatedAt
-}
-
-// ============================================================================
-// Profile Model - Unified User Profile Container
-// ============================================================================
-/// Main profile model that links a User account to their donation profile
-/// and other profile-specific information. Extensible design allows adding
-/// more profile types without modifying User table.
 model Profile {
-  /// Unique identifier for profile (UUID)
-  id String @id @default(uuid())
+  id     String @id @default(uuid())
+  userId Int?   @unique
+  user   User?  @relation("UserProfile", fields: [userId], references: [id], onDelete: SetNull)
 
-  // --- User Reference ---
-  /// Reference to User account (one-to-one)
-  userId Int?  @unique
-  user   User? @relation("UserProfile", fields: [userId], references: [id], onDelete: SetNull)
-
-  // --- Donation Information ---
-  /// Donation-specific profile data (blood group, eligibility, preferences)
   donationProfile DonationProfile? @relation("DonationProfile")
 }
 
-// ============================================================================
-// AvailabilityStatus Enum - Donor Availability Status
-// ============================================================================
-/// Status indicating whether a donor can donate blood currently
-/// AVAILABLE: Eligible and willing to donate
-/// TEMPORARILY_DEFERRED: Medical reason to pause donations (e.g., low iron levels)
-/// PERMANENTLY_DEFERRED: Ineligible due to permanent medical conditions
-/// BUSY: Available but temporarily unavailable (traveling, busy period)
+model DonationProfile {
+  id        String   @id @default(uuid())
+  profileId String?  @unique
+  profile   Profile? @relation("DonationProfile", fields: [profileId], references: [id], onDelete: SetNull)
+
+  bloodGroup     BloodGroup?
+  weightId       String?
+  weight         Vault?             @relation("DonationProfileWeight", fields: [weightId], references: [id], onDelete: SetNull)
+  status         AvailabilityStatus @default(AVAILABLE)
+  totalDonations Int                @default(0)
+  lastDonatedAt  DateTime?
+  nextEligibleAt DateTime?
+
+  maxTravelDistanceKm Int      @default(10)
+  preferredDays       String[]
+
+  emergencyContactId String?
+  emergencyContact   Vault?  @relation("DonationEmergencyContact", fields: [emergencyContactId], references: [id], onDelete: SetNull)
+
+  posts     Post[]   @relation("PostDonationProfile")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum AvailabilityStatus {
   AVAILABLE
   TEMPORARILY_DEFERRED
   PERMANENTLY_DEFERRED
   BUSY
+}
+
+enum BloodGroup {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
 }

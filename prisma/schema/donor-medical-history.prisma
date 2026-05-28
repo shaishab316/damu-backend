@@ -1,0 +1,33 @@
+// ============================================================================
+// DONOR MEDICAL HISTORY
+// ============================================================================
+
+model DonorMedicalHistory {
+  id                    String    @id @default(uuid())
+  donorId               Int       @unique
+  donor                 User      @relation("UserMedicalHistory", fields: [donorId], references: [id], onDelete: Cascade)
+  chronicConditionsId   String?
+  chronicConditions     Vault?    @relation("MedicalHistoryConditions", fields: [chronicConditionsId], references: [id], onDelete: SetNull)
+  currentMedicationsId  String?
+  currentMedications    Vault?    @relation("MedicalHistoryMedications", fields: [currentMedicationsId], references: [id], onDelete: SetNull)
+  allergiesId           String?
+  allergies             Vault?    @relation("MedicalHistoryAllergies", fields: [allergiesId], references: [id], onDelete: SetNull)
+  bloodDisordersId      String?
+  bloodDisorders        Vault?    @relation("MedicalHistoryBloodDisorders", fields: [bloodDisordersId], references: [id], onDelete: SetNull)
+  lastDonatedAt         DateTime?
+  nextEligibleAt        DateTime?
+  isDeferredTemporarily Boolean   @default(false)
+  deferralUntil         DateTime?
+  isPermanentlyDeferred Boolean   @default(false)
+  deferralReasonId      String?
+  deferralReason        Vault?    @relation("MedicalHistoryDeferralReason", fields: [deferralReasonId], references: [id], onDelete: SetNull)
+  lastScreeningAt       DateTime?
+  screeningNoteId       String?
+  screeningNote         Vault?    @relation("MedicalHistoryScreeningNote", fields: [screeningNoteId], references: [id], onDelete: SetNull)
+  doctorNameId          String?
+  doctorName            Vault?    @relation("MedicalHistoryDoctorName", fields: [doctorNameId], references: [id], onDelete: SetNull)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([isDeferredTemporarily, isPermanentlyDeferred])
+}

@@ -1,0 +1,22 @@
+// ============================================================================
+// BLOOD INVENTORY
+// ============================================================================
+
+model BloodInventory {
+  id               String       @id @default(uuid())
+  organizationId   String
+  organization     Organization @relation("OrganizationInventory", fields: [organizationId], references: [id], onDelete: Cascade)
+  bloodGroup       BloodGroup
+  unitsAvailable   Int          @default(0)
+  unitsUsed        Int          @default(0)
+  unitsExpired     Int          @default(0)
+  lastRestockedAt  DateTime?
+  lastUsedAt       DateTime?
+  minimumThreshold Int          @default(5)
+  isLowStock       Boolean      @default(false)
+  updatedAt        DateTime     @updatedAt
+  createdAt        DateTime     @default(now())
+
+  @@unique([organizationId, bloodGroup])
+  @@index([organizationId, isLowStock])
+}

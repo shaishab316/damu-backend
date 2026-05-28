@@ -1,86 +1,49 @@
 // ============================================================================
-// Notification Domain - User Activity Notifications
-// ============================================================================
-// Models for system notifications sent to users for various activities
-// (likes, comments, follows, blood requests, appointments, etc.).
+// NOTIFICATION
 // ============================================================================
 
 model Notification {
-  /// Unique identifier (UUID)
-  id String @id @default(uuid())
+  id         String           @id @default(uuid())
+  userId     Int
+  user       User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  type       NotificationType
+  actorId    Int?
+  actor      User?            @relation("NotificationActors", fields: [actorId], references: [id], onDelete: SetNull)
+  entityType String?
+  entityId   String?
+  titleId    String?
+  title      Vault?           @relation("NotificationTitle", fields: [titleId], references: [id], onDelete: SetNull)
+  messageId  String?
+  message    Vault?           @relation("NotificationMessage", fields: [messageId], references: [id], onDelete: SetNull)
+  isRead     Boolean          @default(false)
+  readAt     DateTime?
+  actionUrl  String?
+  postId     String?
+  post       Post?            @relation("PostNotifications", fields: [postId], references: [id], onDelete: Cascade)
+  commentId  String?
+  comment    PostComment?     @relation("CommentNotifications", fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
-  // --- Recipient ---
-  /// User receiving the notification
-  userId Int
-  user   User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
-
-  /// Type of notification (what action triggered it)
-  type NotificationType
-
-  // --- Actor (who performed the action) ---
-  /// User who triggered the notification (liked, commented, followed, etc.)
-  actorId Int?
-  actor   User? @relation("NotificationActors", fields: [actorId], references: [id], onDelete: SetNull)
-
-  // --- Context (what the notification is about) ---
-  /// Related post (if notification is about a post)
-  postId String?
-  post   Post?   @relation("PostNotifications", fields: [postId], references: [id], onDelete: SetNull)
-
-  /// Related comment (if notification is about a comment)
-  commentId String?
-  comment   PostComment? @relation("CommentNotifications", fields: [commentId], references: [id], onDelete: SetNull)
-
-  // --- Content ---
-  /// Reference to encrypted notification title
-  titleId String?
-  title   Vault?  @relation("NotificationTitle", fields: [titleId], references: [id], onDelete: SetNull)
-
-  /// Reference to encrypted notification message body
-  messageId String?
-  message   Vault?  @relation("NotificationMessage", fields: [messageId], references: [id], onDelete: SetNull)
-
-  // --- Status ---
-  /// Whether user has read this notification
-  isRead Boolean   @default(false)
-  /// When notification was read by user
-  readAt DateTime?
-
-  /// Optional URL to navigate to when notification is clicked
-  actionUrl String?
-
-  // --- Timestamps ---
-  /// When notification was created
-  createdAt DateTime @default(now())
-
-  // --- Database Indexes ---
-  /// Index for user's notification feed (unread first)
   @@index([userId, isRead, createdAt])
-  /// Index for user's all notifications by date
-  @@index([userId, createdAt])
+  @@index([type, createdAt])
 }
 
-// ============================================================================
-// NotificationType Enum - Types of Notifications
-// ============================================================================
-/// Different types of user notifications that can be triggered
-/// POST_LIKE: Someone liked a user's post
-/// POST_COMMENT: Someone commented on a user's post
-/// COMMENT_REPLY: Someone replied to a user's comment
-/// COMMENT_LIKE: Someone liked a user's comment
-/// NEW_FOLLOWER: User gained a new follower
-/// POST_SHARED: User's post was shared
-/// BLOOD_REQUEST_RESPONSE: Donor responded to blood request
-/// DONATION_APPOINTMENT: Donation appointment update (scheduled, reminder, completed, cancelled)
-/// SYSTEM_NOTIFICATION: General system announcements (maintenance, updates, etc.)
 enum NotificationType {
-  POST_LIKE
-  POST_COMMENT
-  COMMENT_REPLY
-  COMMENT_LIKE
-  NEW_FOLLOWER
-  POST_SHARED
-  BLOOD_REQUEST_RESPONSE
-  DONATION_APPOINTMENT
-  SYSTEM_NOTIFICATION
+  FOLLOW_REQUEST
+  FOLLOW_ACCEPTED
+  DONATION_REQUEST_RESPONSE
+  DONATION_REMINDER
+  APPOINTMENT_REMINDER
+  NEW_BLOOD_REQUEST_NEARBY
+  BLOOD_REQUEST_FULFILLED
+  COMMENT_ON_POST
+  LIKE_ON_POST
+  LIKE_ON_COMMENT
+  MENTION_IN_POST
+  MENTION_IN_COMMENT
+  NEW_MESSAGE
+  DONOR_RESPONSE_TO_REQUEST
+  SYSTEM_ALERT
+  CONTENT_MODERATION
 }

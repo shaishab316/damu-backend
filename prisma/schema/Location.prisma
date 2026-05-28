@@ -1,72 +1,33 @@
 // ============================================================================
-// Location Model - Geographic Information
-// ============================================================================
-// Stores geographic coordinates and address information for users,
-// organizations, and blood requests. Uses H3 geospatial indexing for
-// efficient geographic queries (distance, area-based searches).
+// LOCATION
 // ============================================================================
 
 model Location {
-  /// Unique identifier for location (UUID)
-  id String @id @default(uuid())
-
-  // --- Coordinates ---
-  /// Latitude coordinate (decimal degrees, e.g., 37.7749)
-  latitude  Float?
-  /// Longitude coordinate (decimal degrees, e.g., -122.4194)
-  longitude Float?
-
-  // --- Address Components ---
-  /// Full address string (street, building, etc.)
-  address String?
-
-  /// Country name or code
-  country String?
-  /// State/province name
-  state   String?
-  /// City/municipality name
-  city    String?
-
-  // --- H3 Geospatial Indexing ---
-  /// H3 cell identifier at resolution level 5 (~174 km²) for broad area searches
+  id            String  @id @default(uuid())
+  latitude      Float?
+  longitude     Float?
+  address       String?
+  country       String?
+  state         String?
+  city          String?
   h3IndexLevel5 String?
-  /// H3 cell identifier at resolution level 6 (~71 km²) for regional searches
   h3IndexLevel6 String?
-  /// H3 cell identifier at resolution level 7 (~14 km²) for city-level searches
   h3IndexLevel7 String?
-  /// H3 cell identifier at resolution level 8 (~3 km²) for neighborhood searches
   h3IndexLevel8 String?
 
-  // --- System Metadata ---
-  /// Last time location was updated (used to detect stale data)
   updatedAt DateTime @updatedAt
 
-  // --- User & Organization References ---
-  /// Reference to User profile location (one-to-one)
-  userId Int?  @unique
-  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         Int?           @unique
+  user           User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?        @unique
+  organization   Organization?  @relation("OrganizationLocation", fields: [organizationId], references: [id], onDelete: SetNull)
+  bloodRequests  BloodRequest[] @relation("RequestLocation")
 
-  /// Reference to Organization headquarters location
-  organizationId String?
-  organization   Organization? @relation("OrganizationLocation")
-
-  // --- Blood Request References ---
-  /// Blood requests in this location
-  bloodRequests BloodRequest[] @relation("RequestLocation")
-
-  // --- Database Indexes ---
-  /// Index for H3-level searches (broad geographic queries)
   @@index([h3IndexLevel5])
-  /// Index for H3-level searches (regional queries)
   @@index([h3IndexLevel6])
-  /// Index for H3-level searches (city-level queries)
   @@index([h3IndexLevel7])
-  /// Index for H3-level searches (neighborhood queries)
   @@index([h3IndexLevel8])
-  /// Composite index for address component searches
   @@index([country, state, city])
-  /// Composite index for coordinate range queries
   @@index([latitude, longitude])
-  /// Map table name to lowercase for database convention
   @@map("locations")
 }

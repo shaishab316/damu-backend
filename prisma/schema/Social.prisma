@@ -1,330 +1,145 @@
 // ============================================================================
-// Social Domain - Posts, Comments, Engagement & Content
-// ============================================================================
-// Models for social media features including posts, comments, likes,
-// and engagement tracking. Supports nested replies, media attachments,
-// hashtags, saved posts, and content visibility controls.
+// SOCIAL - Posts, Comments, Likes
 // ============================================================================
 
 model Post {
-  /// Unique identifier using ULID (sortable by creation time)
-  id String @id @default(ulid())
-
-  // --- Author ---
-  /// Reference to user who created the post
-  authorId Int
-  author   User @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
-
-  // --- Content ---
-  /// Optional title/headline for the post
-  title     String?
-  /// Reference to encrypted post content/body text
-  contentId String?
-  content   Vault?  @relation("PostContent", fields: [contentId], references: [id], onDelete: SetNull)
-
-  /// Attached media files (images, videos, documents)
-  media Media[] @relation("PostMedia")
-
-  // --- Post Metadata ---
-  /// Status of the post (DRAFT, PUBLISHED, ARCHIVED, DELETED)
-  status     PostStatus     @default(DRAFT)
-  /// Type of post (POST, ANNOUNCEMENT, CAMPAIGN, BLOOD_REQUEST_ALERT)
-  type       PostType       @default(POST)
-  /// Who can see this post (PUBLIC, FOLLOWERS_ONLY, PRIVATE)
-  visibility PostVisibility @default(PUBLIC)
-
-  // --- Content Context ---
-  /// Associated donor profile (if post is from a donor advertising availability)
+  id                String           @id @default(dbgenerated("gen_random_uuid()"))
+  authorId          Int
+  author            User             @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  title             String?
+  contentId         String?
+  content           Vault?           @relation("PostContent", fields: [contentId], references: [id], onDelete: SetNull)
+  media             Media[]          @relation("PostMedia")
+  status            PostStatus       @default(DRAFT)
+  type              PostType         @default(POST)
+  visibility        PostVisibility   @default(PUBLIC)
   donationProfileId String?
   donationProfile   DonationProfile? @relation("PostDonationProfile", fields: [donationProfileId], references: [id], onDelete: SetNull)
-
-  /// Associated blood request (if post is about a specific blood need)
-  bloodRequestId String?
-  bloodRequest   BloodRequest? @relation("PostBloodRequest", fields: [bloodRequestId], references: [id], onDelete: SetNull)
-
-  // --- Engagement Metrics ---
-  /// Total number of likes on this post
-  likesCount    Int @default(0)
-  /// Total number of comments on this post
-  commentsCount Int @default(0)
-  /// Total number of times post was shared
-  sharesCount   Int @default(0)
-  /// Total number of times post was viewed
-  viewsCount    Int @default(0)
-
-  // --- Edit History ---
-  /// Whether post has been edited since creation
-  isEdited Boolean   @default(false)
-  /// Date/time of last edit (if isEdited is true)
-  editedAt DateTime?
-
-  // --- Content Moderation ---
-  /// Whether post contains sensitive content (requires viewer consent to view)
-  isSensitive       Boolean @default(false)
-  /// Reference to encrypted reason for sensitive content flag
+  bloodRequestId    String?
+  bloodRequest      BloodRequest?    @relation("PostBloodRequest", fields: [bloodRequestId], references: [id], onDelete: SetNull)
+  likesCount        Int              @default(0)
+  commentsCount     Int              @default(0)
+  sharesCount       Int              @default(0)
+  viewsCount        Int              @default(0)
+  isEdited          Boolean          @default(false)
+  editedAt          DateTime?
+  isSensitive       Boolean          @default(false)
   sensitiveReasonId String?
-  sensitiveReason   Vault?  @relation("PostSensitiveReason", fields: [sensitiveReasonId], references: [id], onDelete: SetNull)
+  sensitiveReason   Vault?           @relation("PostSensitiveReason", fields: [sensitiveReasonId], references: [id], onDelete: SetNull)
+  parentPostId      String?
+  parentPost        Post?            @relation("PostReplies", fields: [parentPostId], references: [id], onDelete: Cascade)
+  replies           Post[]           @relation("PostReplies")
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
-  // --- System Metadata ---
-  /// When post was created
-  createdAt DateTime @default(now())
-  /// Last modification timestamp
-  updatedAt DateTime @updatedAt
-
-  // --- Related Content ---
-  /// Hashtags used in this post
   hashTags      PostHashTag[]     @relation("PostHashTag")
-  /// Comments on this post
   comments      PostComment[]     @relation("PostComments")
-  /// Likes on this post
   likes         PostCommentLike[] @relation("PostLikes")
-  /// Users who saved this post
   saves         SavedPost[]       @relation("SavedPost")
-  /// Notifications related to this post
   notifications Notification[]    @relation("PostNotifications")
 
-  // --- Thread/Reply Support ---
-  /// Reference to parent post (if this is a reply to another post)
-  parentPostId String?
-  parentPost   Post?   @relation("PostReplies", fields: [parentPostId], references: [id], onDelete: Cascade)
-  /// Replies/threads to this post
-  replies      Post[]  @relation("PostReplies")
-
-  // --- Database Indexes ---
-  /// Index for user's post feed
   @@index([authorId, createdAt])
-  /// Index for filtering public/published posts
   @@index([status, visibility, createdAt])
-  /// Index for searching by post type (announcements, campaigns, etc.)
   @@index([type, createdAt])
 }
 
-// ============================================================================
-// PostComment Model - Comments on Posts
-// ============================================================================
-/// Represents a comment or reply on a post, supporting nested comment threads
 model PostComment {
-  /// Unique identifier for comment (UUID)
-  id String @id @default(uuid())
-
-  // --- Comment Target ---
-  /// Reference to post being commented on
-  postId String
-  post   Post   @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
-
-  // --- Author ---
-  /// Reference to user who wrote the comment
-  authorId Int
-  author   User @relation("UserComments", fields: [authorId], references: [id], onDelete: Cascade)
-
-  // --- Content ---
-  /// Reference to encrypted comment text
-  contentId String
-  content   Vault  @relation("CommentContent", fields: [contentId], references: [id], onDelete: Cascade)
-
-  // --- Engagement ---
-  /// Number of likes on this comment
-  likesCount Int @default(0)
-
-  // --- Edit History ---
-  /// Whether comment has been edited
-  isEdited Boolean   @default(false)
-  /// When comment was last edited
-  editedAt DateTime?
-
-  // --- System Metadata ---
-  /// When comment was posted
-  createdAt DateTime @default(now())
-  /// Last modification timestamp
-  updatedAt DateTime @updatedAt
-
-  // --- Related Content ---
-  /// Likes on this comment
-  likes         PostCommentLike[] @relation("CommentLikes")
-  /// Notifications related to this comment
-  notifications Notification[]    @relation("CommentNotifications")
-
-  // --- Reply Support ---
-  /// Reference to parent comment (if this is a reply to a comment)
+  id              String        @id @default(uuid())
+  postId          String
+  post            Post          @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
+  authorId        Int
+  author          User          @relation("UserComments", fields: [authorId], references: [id], onDelete: Cascade)
+  contentId       String
+  content         Vault         @relation("CommentContent", fields: [contentId], references: [id], onDelete: Cascade)
+  likesCount      Int           @default(0)
+  isEdited        Boolean       @default(false)
+  editedAt        DateTime?
   parentCommentId String?
   parentComment   PostComment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
-  /// Replies to this comment
   replies         PostComment[] @relation("CommentReplies")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  // --- Database Indexes ---
-  /// Index for post's comment thread
+  likes         PostCommentLike[] @relation("CommentLikes")
+  notifications Notification[]    @relation("CommentNotifications")
+
   @@index([postId, createdAt])
-  /// Index for user's comment history
   @@index([authorId, createdAt])
 }
 
-// ============================================================================
-// PostCommentLike Model - Engagement on Posts and Comments
-// ============================================================================
-/// Represents a like on either a post or a comment
 model PostCommentLike {
-  /// Unique identifier for like record (UUID)
-  id String @id @default(uuid())
-
-  // --- Like Target (can be post or comment) ---
-  /// Reference to post being liked (mutually exclusive with commentId)
-  postId String?
-  post   Post?   @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
-
-  /// Reference to comment being liked (mutually exclusive with postId)
+  id        String       @id @default(uuid())
+  postId    String?
+  post      Post?        @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
   commentId String?
   comment   PostComment? @relation("CommentLikes", fields: [commentId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User         @relation("UserCommentLikes", fields: [userId], references: [id], onDelete: Cascade)
 
-  // --- User ---
-  /// Reference to user who gave the like
-  userId Int
-  user   User @relation("UserCommentLikes", fields: [userId], references: [id], onDelete: Cascade)
-
-  /// Emoji used for the like (👍, ❤️, etc.)
-  likeEmoji String? @default("👍")
-
-  /// When like was created
-  createdAt DateTime @default(now())
-
-  /// Prevent duplicate likes on same target
-  @@unique([commentId, userId])
-  /// Index for searching likes by emoji
-  @@index([likeEmoji])
+  @@index([userId])
+  @@index([postId])
+  @@index([commentId])
 }
 
-// ============================================================================
-// PostStatus Enum - Publication Status
-// ============================================================================
-/// DRAFT: Post not yet published, visible only to author
-/// PUBLISHED: Post published, visible based on visibility settings
-/// ARCHIVED: Post archived, hidden from feeds but not deleted
+model HashTag {
+  id    String @id @default(uuid())
+  name  String @unique
+  count Int    @default(0)
+
+  posts PostHashTag[] @relation("HashTagPosts")
+}
+
+model PostHashTag {
+  id      String  @id @default(uuid())
+  postId  String
+  post    Post    @relation("PostHashTag", fields: [postId], references: [id], onDelete: Cascade)
+  hashTag HashTag @relation("HashTagPosts", fields: [hashTagId], references: [id], onDelete: Cascade)
+
+  hashTagId String
+
+  @@unique([postId, hashTagId])
+}
+
+model SavedPost {
+  id        String   @id @default(uuid())
+  userId    Int
+  user      User     @relation("UserSavedPosts", fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation("SavedPost", fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model SavedCollection {
+  id          String   @id @default(uuid())
+  userId      Int
+  user        User     @relation("UserSavedCollections", fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, name])
+}
+
 enum PostStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+  DELETED
 }
 
-// ============================================================================
-// PostType Enum - Types of Posts
-// ============================================================================
-/// Different content types users can post
-/// POST: Regular social post
-/// ARTICLE: Long-form article/blog post
-/// ANNOUNCEMENT: Important announcement
-/// DONATION_PROFILE: Donor availability announcement
-/// BLOOD_REQUEST: Blood request alert/campaign
 enum PostType {
   POST
   ARTICLE
-  ANNOUNCEMENT
-  DONATION_PROFILE
-  BLOOD_REQUEST
+  EVENT
+  POLL
+  VIDEO
 }
 
-// ============================================================================
-// PostVisibility Enum - Post Visibility Settings
-// ============================================================================
-/// PUBLIC: Visible to all users
-/// FOLLOWERS_ONLY: Visible only to users following the author
-/// PRIVATE: Visible only to author
 enum PostVisibility {
   PUBLIC
-  FOLLOWERS_ONLY
+  FRIENDS_ONLY
   PRIVATE
-}
-
-// ============================================================================
-// PostHashTag Model - Tagging Posts with Keywords
-// ============================================================================
-/// Links posts to hashtags for categorization and searchability
-model PostHashTag {
-  /// Unique identifier (UUID)
-  id        String @id @default(uuid())
-  /// Reference to post
-  postId    String
-  /// Reference to hashtag
-  hashTagId String
-
-  /// Relation to post
-  post    Post    @relation("PostHashTag", fields: [postId], references: [id], onDelete: Cascade)
-  /// Relation to hashtag
-  hashTag HashTag @relation("PostHashTag", fields: [hashTagId], references: [id], onDelete: Cascade)
-
-  /// Ensure no duplicate post-tag combinations
-  @@unique([postId, hashTagId])
-}
-
-// ============================================================================
-// HashTag Model - Content Categorization
-// ============================================================================
-/// Hashtags used to categorize and discover posts
-model HashTag {
-  /// Unique identifier (UUID)
-  id String @id @default(uuid())
-
-  /// Hashtag name (unique, e.g., "blood-donation", "O-positive")
-  name String @unique
-
-  /// Posts using this hashtag
-  posts PostHashTag[] @relation("PostHashTag")
-}
-
-// ============================================================================
-// SavedPost Model - Bookmarking & Collections
-// ============================================================================
-/// Represents a post saved/bookmarked by a user for later reference
-model SavedPost {
-  /// Unique identifier (UUID)
-  id String @id @default(uuid())
-
-  // --- Post Reference ---
-  /// Post being saved
-  postId String
-  post   Post   @relation("SavedPost", fields: [postId], references: [id], onDelete: Cascade)
-
-  // --- User Reference ---
-  /// User who saved the post
-  userId Int
-  user   User @relation("UserSavedPosts", fields: [userId], references: [id], onDelete: Cascade)
-
-  // --- Collection Reference ---
-  /// Optional collection this saved post belongs to
-  collectionId String?
-  collection   SavedCollection? @relation("CollectionPosts", fields: [collectionId], references: [id], onDelete: SetNull)
-
-  /// When post was saved
-  createdAt DateTime @default(now())
-
-  /// Prevent duplicate saves of same post by same user
-  @@unique([postId, userId])
-  /// Index for user's saved posts
-  @@index([userId, createdAt])
-}
-
-// ============================================================================
-// SavedCollection Model - User-Created Saved Post Collections
-// ============================================================================
-/// Collections to organize saved posts (e.g., "Urgent Needs", "My Donors")
-model SavedCollection {
-  /// Unique identifier (UUID)
-  id String @id @default(uuid())
-
-  /// Name of the collection
-  name String
-
-  // --- Owner ---
-  /// User who created this collection
-  userId Int
-  user   User @relation("UserSavedCollections", fields: [userId], references: [id], onDelete: Cascade)
-
-  /// Posts in this collection
-  posts SavedPost[] @relation("CollectionPosts")
-
-  /// When collection was created
-  createdAt DateTime @default(now())
-  /// Last modification timestamp
-  updatedAt DateTime @updatedAt
-
-  /// Index for user's collections
-  @@index([userId, createdAt])
 }

@@ -1,0 +1,28 @@
+// ============================================================================
+// DEVICE SESSION - Multi-device support
+// ============================================================================
+
+model DeviceSession {
+  id               String       @id @default(uuid())
+  userId           Int
+  user             User         @relation("UserDeviceSessions", fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String       @unique
+  deviceName       String?
+  deviceType       String?
+  ipAddress        String?
+  userAgent        String?
+  lastActiveAt     DateTime     @default(now())
+  expiresAt        DateTime
+  createdAt        DateTime     @default(now())
+  pushToken        String?
+  pushProvider     PushProvider @default(FCM)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum PushProvider {
+  FCM
+  ONESIGNAL
+  APNS
+}

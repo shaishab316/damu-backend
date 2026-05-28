@@ -1,0 +1,45 @@
+// ============================================================================
+// GROUPS
+// ============================================================================
+
+model Group {
+  id            String   @id @default(uuid())
+  nameId        String
+  name          Vault    @relation("GroupName", fields: [nameId], references: [id], onDelete: Cascade)
+  descriptionId String?
+  description   Vault?   @relation("GroupDescription", fields: [descriptionId], references: [id], onDelete: SetNull)
+  rulesId       String?
+  rules         Vault?   @relation("GroupRules", fields: [rulesId], references: [id], onDelete: SetNull)
+  creatorId     Int
+  isPrivate     Boolean  @default(false)
+  memberCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  members GroupMember[] @relation("GroupMembers")
+
+  @@index([creatorId, createdAt])
+  @@index([isPrivate, createdAt])
+}
+
+model GroupMember {
+  id        String    @id @default(uuid())
+  groupId   String
+  group     Group     @relation("GroupMembers", fields: [groupId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User      @relation("UserGroupMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  role      GroupRole @default(MEMBER)
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([groupId, userId])
+  @@index([userId, groupId])
+}
+
+enum GroupRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+  GUEST
+}

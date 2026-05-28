@@ -1,35 +1,18 @@
 // ============================================================================
-// Following Domain - User Relationships & Network
-// ============================================================================
-// Models for managing user following/followers relationships, including
-// blocking and follow request features for building user networks.
+// FOLLOW
 // ============================================================================
 
 model Follow {
-  // --- Follower (user doing the following) ---
-  /// Reference to user who is following
-  followerId Int
-  follower   User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
-
-  // --- Following (user being followed) ---
-  /// Reference to user being followed
+  followerId  Int
+  follower    User      @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
   followingId Int
-  following   User @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
-
-  // --- Block Feature ---
-  /// Whether following is blocked (follower blocked by following user)
-  isBlocked Boolean @default(false)
-
-  // --- Timeline ---
-  /// When follow request was initiated (for follow requests flow)
+  following   User      @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+  isBlocked   Boolean   @default(false)
+  isPending   Boolean   @default(false)
   requestedAt DateTime  @default(now())
-  /// When follow was accepted (if follow requests are used)
   acceptedAt  DateTime?
 
-  /// Prevent duplicate follow relationships
   @@unique([followerId, followingId])
-  /// Index for follower's following list
   @@index([followerId])
-  /// Index for following user's followers list
   @@index([followingId])
 }

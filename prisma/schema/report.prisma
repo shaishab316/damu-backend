@@ -1,0 +1,38 @@
+// ============================================================================
+// REPORT - Content moderation
+// ============================================================================
+
+model Report {
+  id           String       @id @default(uuid())
+  reporterId   Int
+  reporter     User         @relation("UserReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  entityType   String
+  entityId     String
+  reason       ReportReason
+  description  String?
+  status       ReportStatus @default(PENDING)
+  resolvedById Int?
+  resolvedBy   User?        @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+
+  @@index([status, createdAt])
+  @@index([entityType, entityId])
+  @@index([reporterId])
+}
+
+enum ReportReason {
+  SPAM
+  MISINFORMATION
+  HARASSMENT
+  FAKE_BLOOD_REQUEST
+  INAPPROPRIATE_CONTENT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  ACTIONED
+}

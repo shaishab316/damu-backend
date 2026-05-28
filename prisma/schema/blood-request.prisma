@@ -1,0 +1,65 @@
+// ============================================================================
+// BLOOD REQUEST
+// ============================================================================
+
+model BloodRequest {
+  id             String         @id @default(uuid())
+  requesterId    Int
+  requester      User           @relation("UserBloodRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  bloodGroup     BloodGroup
+  unitsNeeded    Int            @default(1)
+  urgency        RequestUrgency @default(NORMAL)
+  status         RequestStatus  @default(OPEN)
+  isAnonymous    Boolean        @default(false)
+  locationId     String?
+  location       Location?      @relation("RequestLocation", fields: [locationId], references: [id], onDelete: SetNull)
+  noteId         String?
+  note           Vault?         @relation("RequestNote", fields: [noteId], references: [id], onDelete: SetNull)
+  organizationId String?
+  organization   Organization?  @relation("OrganizationRequest", fields: [organizationId], references: [id], onDelete: SetNull)
+  expiresAt      DateTime?
+  fulfilledAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  responses BloodRequestResponse[] @relation("BloodRequestResponses")
+  posts     Post[]                 @relation("PostBloodRequest")
+  donations Donation[]             @relation("RequestDonations")
+
+  @@index([status, createdAt])
+  @@index([bloodGroup, status])
+  @@index([urgency, status])
+}
+
+model BloodRequestResponse {
+  id          String         @id @default(uuid())
+  requestId   String
+  donorId     Int
+  request     BloodRequest   @relation("BloodRequestResponses", fields: [requestId], references: [id], onDelete: Cascade)
+  donor       User           @relation("UserDonorResponses", fields: [donorId], references: [id], onDelete: Cascade)
+  status      ResponseStatus @default(PENDING)
+  respondedAt DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([requestId, donorId])
+}
+
+enum RequestUrgency {
+  CRITICAL
+  URGENT
+  NORMAL
+}
+
+enum RequestStatus {
+  OPEN
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+enum ResponseStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COMPLETED
+}

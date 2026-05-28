@@ -1,0 +1,33 @@
+// ============================================================================
+// BLOOD TEST
+// ============================================================================
+
+model BloodTest {
+  id                  String    @id @default(uuid())
+  donationId          String    @unique
+  donation            Donation  @relation("BloodTest", fields: [donationId], references: [id], onDelete: Cascade)
+  hivResultId         String?
+  hivResult           Vault?    @relation("BloodTestHIV", fields: [hivResultId], references: [id], onDelete: SetNull)
+  hepatitisBResultId  String?
+  hepatitisBResult    Vault?    @relation("BloodTestHepatitisB", fields: [hepatitisBResultId], references: [id], onDelete: SetNull)
+  hepatitisCResultId  String?
+  hepatitisCResult    Vault?    @relation("BloodTestHepatitisC", fields: [hepatitisCResultId], references: [id], onDelete: SetNull)
+  syphilisResultId    String?
+  syphilisResult      Vault?    @relation("BloodTestSyphilis", fields: [syphilisResultId], references: [id], onDelete: SetNull)
+  bloodTypingResultId String?
+  bloodTypingResult   Vault?    @relation("BloodTestBloodTyping", fields: [bloodTypingResultId], references: [id], onDelete: SetNull)
+  otherTestsId        String?
+  otherTests          Vault?    @relation("BloodTestOther", fields: [otherTestsId], references: [id], onDelete: SetNull)
+  testDate            DateTime  @default(now())
+  approvedAt          DateTime?
+  labTechnicianNameId String?
+  labTechnicianName   Vault?    @relation("BloodTestLabTechnician", fields: [labTechnicianNameId], references: [id], onDelete: SetNull)
+  approvalStatusId    String?
+  approvalStatus      Vault?    @relation("BloodTestApprovalStatus", fields: [approvalStatusId], references: [id], onDelete: SetNull)
+  remarksId           String?
+  remarks             Vault?    @relation("BloodTestRemarks", fields: [remarksId], references: [id], onDelete: SetNull)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([testDate])
+}
