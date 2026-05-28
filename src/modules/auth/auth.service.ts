@@ -246,4 +246,101 @@ export class AuthService {
       },
     });
   }
+
+  async refreshToken(
+    refreshToken: string,
+    userAgent?: string,
+    ipAddress?: string,
+  ) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token is required');
+    }
+
+    // Hash the provided refresh token to look it up
+    const refreshTokenHash = this.vault.hashPlain(refreshToken);
+
+    // Find the device session with this refresh token
+    const deviceSession = await this.prisma.deviceSession.findFirst({
+      where: {
+        refreshTokenHash,
+      },
+      include: {
+        user: {
+          include: {
+            name: true,
+            email: true,
+            phone: true,
+            gender: true,
+            dob: true,
+
+            auth: true,
+          },
+        },
+      },
+    });
+
+    if (!deviceSession) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // Check if token is expired
+    if (deviceSession.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token expired');
+    }
+
+    const user = deviceSession.user;
+
+    // Verify user is active
+    if (!user.auth?.isActive || !user.isActive || user.isBanned) {
+      throw new UnauthorizedException(
+        'Login not allowed. Please contact support.',
+      );
+    }
+
+    // Generate new access token
+    const accessToken = this.jwt.sign(
+      {},
+      {
+        subject: user.id + '',
+      },
+    );
+
+    // Generate new refresh token (rotate)
+    const newRefreshToken = this.vault.randomToken(32);
+    const newRefreshTokenHash = this.vault.hashPlain(newRefreshToken);
+
+    // Update the device session with new refresh token
+    const updatedSession = await this.prisma.deviceSession.update({
+      where: {
+        id: deviceSession.id,
+      },
+      data: {
+        refreshTokenHash: newRefreshTokenHash,
+        lastActiveAt: new Date(),
+        userAgent: userAgent || deviceSession.userAgent,
+        ipAddress: ipAddress || deviceSession.ipAddress,
+      },
+    });
+
+    return {
+      user: {
+        id: user.id,
+        isActive: user.isActive,
+        isBanned: user.isBanned,
+        name: this.vault.decrypt(user.name?.encrypted),
+        email: this.vault.decrypt(user.email?.encrypted),
+        phone: this.vault.decrypt(user.phone?.encrypted),
+        dob: this.vault.decrypt(user.dob?.encrypted),
+        gender: this.vault.decrypt(user.gender?.encrypted),
+      },
+      tokens: {
+        accessToken,
+        refreshToken: newRefreshToken,
+      },
+      device: {
+        id: updatedSession.id,
+        type: updatedSession.deviceType,
+      },
+    };
+  }
 }

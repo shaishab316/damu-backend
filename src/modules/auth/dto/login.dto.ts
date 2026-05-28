@@ -33,3 +33,9 @@ export const ResetPasswordSchema = z.object({
 });
 
 export class ResetPasswordDto extends createZodDto(ResetPasswordSchema) {}
+
+export const RefreshTokenSchema = z.object({
+  refreshToken: z.string().trim().min(1, 'Refresh token is required'),
+});
+
+export class RefreshTokenDto extends createZodDto(RefreshTokenSchema) {}
